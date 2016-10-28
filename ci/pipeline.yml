@@ -1,0 +1,16 @@
+jobs:
+- name: test
+  plan:
+  - get: ladybug-src
+    trigger: true
+  - task: test
+    file: ladybug-src/ci/test.yml
+    privileged: true
+
+resources:
+- name: ladybug-src
+  type: git
+  source:
+    uri: git@github.com:teddyking/ladybug.git
+    branch: master
+    private_key: {{github-private-key}}
