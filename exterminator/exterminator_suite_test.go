@@ -1,4 +1,4 @@
-package main_test
+package exterminator_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -18,7 +18,7 @@ var (
 	gardenClient  garden.Client
 )
 
-func TestLadybug(t *testing.T) {
+func TestExterminator(t *testing.T) {
 	BeforeSuite(func() {
 		var err error
 
@@ -38,5 +38,5 @@ func TestLadybug(t *testing.T) {
 	})
 
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ladybug Suite")
+	RunSpecs(t, "Exterminator Suite")
 }

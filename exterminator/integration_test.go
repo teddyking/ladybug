@@ -1,4 +1,4 @@
-package main_test
+package exterminator_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -11,7 +11,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Integration", func() {
+var _ = Describe("ladybug", func() {
 	var (
 		args    []string
 		session *gexec.Session
