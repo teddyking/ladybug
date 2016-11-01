@@ -19,5 +19,5 @@ ladybug info
 ## Testing and CI
 
 ladybug uses [concourse](https://concourse.ci) for both testing and CI.
-Assuming you have concourse installed with a [fly target](https://concourse.ci/fly-targets.html)
-named `lite`, the test suite can be run with a simple `scripts/test`.
+Assuming you are running concourse-lite, and that you have [garden-runc-release](https://github.com/cloudfoundry/garden-runc-release) checked out to `"$HOME/workspace/garden-runc-release"`,
+the test suite can be run via `scripts/test`.
