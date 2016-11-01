@@ -17,18 +17,15 @@ var _ = Describe("Info", func() {
 		fakeGardenClient gardenfakes.FakeClient
 		infoCommand      *Info
 		stdout           *gbytes.Buffer
-		stderr           *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		fakeGardenClient = gardenfakes.FakeClient{}
 		stdout = gbytes.NewBuffer()
-		stderr = gbytes.NewBuffer()
 
 		infoCommand = &Info{
 			Client: &fakeGardenClient,
 			Out:    stdout,
-			Err:    stderr,
 		}
 	})
 
@@ -73,17 +70,11 @@ var _ = Describe("Info", func() {
 			fakeGardenClient.ContainersReturns(nil, errors.New("error-getting-containers"))
 		})
 
-		It("prints a useful error message to stderr", func() {
-			infoCommand.Execute(nil)
-
-			Expect(fakeGardenClient.ContainersCallCount()).To(Equal(1))
-			Expect(fakeGardenClient.ContainersArgsForCall(0)).To(Equal(garden.Properties{}))
-
-			Expect(stderr).To(gbytes.Say("Garden returned an error - error-getting-containers\n"))
-		})
-
 		It("returns the error", func() {
-			Expect(infoCommand.Execute(nil)).NotTo(Succeed())
+			err := infoCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-getting-containers"))
 		})
 	})
 })

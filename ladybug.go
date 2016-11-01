@@ -22,7 +22,7 @@ func main() {
 	parser := flags.NewParser(nil, flags.HelpFlag|flags.PassDoubleDash)
 
 	commands := []command{
-		{"info", "Prints info about garden and the host", &commands.Info{Client: gardenClient, Out: os.Stdout, Err: os.Stderr}},
+		{"info", "Prints info about garden and the host", &commands.Info{Client: gardenClient, Out: os.Stdout}},
 	}
 
 	for _, cmd := range commands {
@@ -31,6 +31,6 @@ func main() {
 
 	_, err := parser.Parse()
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%s\n", err)
+		fmt.Fprintf(os.Stdout, "%s", err)
 	}
 }

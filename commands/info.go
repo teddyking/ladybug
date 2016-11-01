@@ -10,13 +10,11 @@ import (
 type Info struct {
 	Client garden.Client
 	Out    io.Writer
-	Err    io.Writer
 }
 
 func (command *Info) Execute(args []string) error {
 	containers, err := command.Client.Containers(garden.Properties{})
 	if err != nil {
-		command.Err.Write([]byte(fmt.Sprintf("Garden returned an error - %s\n", err.Error())))
 		return err
 	}
 
