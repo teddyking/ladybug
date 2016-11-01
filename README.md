@@ -10,6 +10,12 @@ cd $GOPATH/src/github.com/teddyking/ladybug
 go install
 ```
 
+## Usage
+
+```
+ladybug info
+```
+
 ## Testing and CI
 
 ladybug uses [concourse](https://concourse.ci) for both testing and CI.
