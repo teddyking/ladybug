@@ -1,11 +1,22 @@
-hash: cc70a32d60a966031aa0a876188f96abab2c9fe4ae4b52bf6b56209512b73e5f
-updated: 2016-10-28T17:20:41.692148415+01:00
+hash: 47387f67cbcb091805668de8704927e7bd5d2f60b97ce8a24555968a8a0754a8
+updated: 2016-10-31T15:06:12.356454436Z
 imports:
 - name: github.com/jessevdk/go-flags
-  version: 37c8226983775d404b6edfebd44be1078bd0fe95
+  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
 testImports:
+- name: code.cloudfoundry.org/garden
+  version: e328e6698f8e101158e9c498f0cebe018846f594
+  subpackages:
+  - client
+  - client/connection
+  - routes
+  - transport
+- name: code.cloudfoundry.org/lager
+  version: b273f19621a28f627423f658e71e014f114dd53e
+- name: github.com/bmizerany/pat
+  version: c068ca2f0aacee5ac3681d68e4d0a003b7d1fd2c
 - name: github.com/onsi/ginkgo
-  version: 462326b1628e124b23f42e87a8f2750e3c4e2d24
+  version: a8ccd817611666211fdf6e6a752174a0db8374a8
   subpackages:
   - config
   - internal/codelocation
@@ -20,15 +31,18 @@ testImports:
   - internal/writer
   - reporters
   - reporters/stenographer
+  - reporters/stenographer/support/go-colorable
+  - reporters/stenographer/support/go-isatty
   - types
 - name: github.com/onsi/gomega
-  version: a78ae492d53aad5a7a232d0d0462c14c400e3ee7
+  version: d6ea11462a5e887f44c322f3c8cdda78d5a05117
   subpackages:
   - format
   - gbytes
   - gexec
   - internal/assertion
   - internal/asyncassertion
+  - internal/oraclematcher
   - internal/testingtsupport
   - matchers
   - matchers/support/goraph/bipartitegraph
@@ -36,3 +50,11 @@ testImports:
   - matchers/support/goraph/node
   - matchers/support/goraph/util
   - types
+- name: github.com/tedsuo/rata
+  version: 0649c23705dfb45a9693b668c4fc1c0666f485d9
+- name: golang.org/x/sys
+  version: c200b10b5d5e122be351b67af224adc6128af5bf
+  subpackages:
+  - unix
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0

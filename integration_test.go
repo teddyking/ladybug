@@ -6,6 +6,7 @@ import (
 
 	"os/exec"
 
+	"code.cloudfoundry.org/garden"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 )
@@ -47,6 +48,28 @@ var _ = Describe("Integration", func() {
 
 		It("returns a 0 exit code", func() {
 			Eventually(session).Should(gexec.Exit(0))
+		})
+	})
+
+	Context("when run with info", func() {
+		BeforeEach(func() {
+			args = []string{"info"}
+
+			_, err := gardenClient.Create(garden.ContainerSpec{Handle: "info-container"})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		AfterEach(func() {
+			err := gardenClient.Destroy("info-container")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns a 0 exit code", func() {
+			Eventually(session).Should(gexec.Exit(0))
+		})
+
+		It("prints the number of running containers to stdout", func() {
+			Eventually(stdout).Should(gbytes.Say("Running containers: 1"))
 		})
 	})
 })

@@ -1,3 +1,3 @@
 #!/bin/bash
 
-fly -t lite e -c ci/test.yml -x -i ladybug-src=.
+fly -t lite e -c ci/test.yml -p -x -i ladybug-src=. -i gr-release-develop="$HOME/workspace/garden-runc-release"

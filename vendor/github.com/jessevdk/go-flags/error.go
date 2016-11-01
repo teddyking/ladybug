@@ -1,33 +1,101 @@
 package flags
 
+import (
+	"fmt"
+)
+
 // ErrorType represents the type of error.
 type ErrorType uint
 
 const (
-	// Unknown or generic error
+	// ErrUnknown indicates a generic error.
 	ErrUnknown ErrorType = iota
 
-	// Expected an argument but got none
+	// ErrExpectedArgument indicates that an argument was expected.
 	ErrExpectedArgument
 
-	// Unknown flag
+	// ErrUnknownFlag indicates an unknown flag.
 	ErrUnknownFlag
 
-	// Unknown group
+	// ErrUnknownGroup indicates an unknown group.
 	ErrUnknownGroup
 
-	// Failed to marshal value
+	// ErrMarshal indicates a marshalling error while converting values.
 	ErrMarshal
 
-	// The error contains the builtin help message
+	// ErrHelp indicates that the built-in help was shown (the error
+	// contains the help message).
 	ErrHelp
 
-	// An argument for a boolean value was specified
+	// ErrNoArgumentForBool indicates that an argument was given for a
+	// boolean flag (which don't not take any arguments).
 	ErrNoArgumentForBool
 
-	// A required flag was not specified
+	// ErrRequired indicates that a required flag was not provided.
 	ErrRequired
+
+	// ErrShortNameTooLong indicates that a short flag name was specified,
+	// longer than one character.
+	ErrShortNameTooLong
+
+	// ErrDuplicatedFlag indicates that a short or long flag has been
+	// defined more than once
+	ErrDuplicatedFlag
+
+	// ErrTag indicates an error while parsing flag tags.
+	ErrTag
+
+	// ErrCommandRequired indicates that a command was required but not
+	// specified
+	ErrCommandRequired
+
+	// ErrUnknownCommand indicates that an unknown command was specified.
+	ErrUnknownCommand
+
+	// ErrInvalidChoice indicates an invalid option value which only allows
+	// a certain number of choices.
+	ErrInvalidChoice
+
+	// ErrInvalidTag indicates an invalid tag or invalid use of an existing tag
+	ErrInvalidTag
 )
+
+func (e ErrorType) String() string {
+	switch e {
+	case ErrUnknown:
+		return "unknown"
+	case ErrExpectedArgument:
+		return "expected argument"
+	case ErrUnknownFlag:
+		return "unknown flag"
+	case ErrUnknownGroup:
+		return "unknown group"
+	case ErrMarshal:
+		return "marshal"
+	case ErrHelp:
+		return "help"
+	case ErrNoArgumentForBool:
+		return "no argument for bool"
+	case ErrRequired:
+		return "required"
+	case ErrShortNameTooLong:
+		return "short name too long"
+	case ErrDuplicatedFlag:
+		return "duplicated flag"
+	case ErrTag:
+		return "tag"
+	case ErrCommandRequired:
+		return "command required"
+	case ErrUnknownCommand:
+		return "unknown command"
+	case ErrInvalidChoice:
+		return "invalid choice"
+	case ErrInvalidTag:
+		return "invalid tag"
+	}
+
+	return "unrecognized error type"
+}
 
 // Error represents a parser error. The error returned from Parse is of this
 // type. The error contains both a Type and Message.
@@ -39,7 +107,7 @@ type Error struct {
 	Message string
 }
 
-// Get the errors error message.
+// Error returns the error's message
 func (e *Error) Error() string {
 	return e.Message
 }
@@ -51,10 +119,16 @@ func newError(tp ErrorType, message string) *Error {
 	}
 }
 
-func wrapError(err error) error {
-	if _, ok := err.(*Error); !ok {
+func newErrorf(tp ErrorType, format string, args ...interface{}) *Error {
+	return newError(tp, fmt.Sprintf(format, args...))
+}
+
+func wrapError(err error) *Error {
+	ret, ok := err.(*Error)
+
+	if !ok {
 		return newError(ErrUnknown, err.Error())
 	}
 
-	return err
+	return ret
 }

@@ -7,7 +7,6 @@ package flags
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"sort"
@@ -18,58 +17,112 @@ import (
 // A Parser provides command line option parsing. It can contain several
 // option groups each with their own set of options.
 type Parser struct {
-	Commander
+	// Embedded, see Command for more information
+	*Command
 
-	// The option groups available to the parser
-	Groups    []*Group
-	GroupsMap map[string]*Group
-
-	// The parser application name
-	ApplicationName string
-
-	// The application short description
-	Description string
-
-	// The usage (e.g. [OPTIONS] <filename>)
+	// A usage string to be displayed in the help message.
 	Usage string
 
+	// Option flags changing the behavior of the parser.
 	Options Options
 
-	currentCommand       *Group
-	currentCommandString []string
+	// NamespaceDelimiter separates group namespaces and option long names
+	NamespaceDelimiter string
+
+	// UnknownOptionsHandler is a function which gets called when the parser
+	// encounters an unknown option. The function receives the unknown option
+	// name, a SplitArgument which specifies its value if set with an argument
+	// separator, and the remaining command line arguments.
+	// It should return a new list of remaining arguments to continue parsing,
+	// or an error to indicate a parse failure.
+	UnknownOptionHandler func(option string, arg SplitArgument, args []string) ([]string, error)
+
+	// CompletionHandler is a function gets called to handle the completion of
+	// items. By default, the items are printed and the application is exited.
+	// You can override this default behavior by specifying a custom CompletionHandler.
+	CompletionHandler func(items []Completion)
+
+	// CommandHandler is a function that gets called to handle execution of a
+	// command. By default, the command will simply be executed. This can be
+	// overridden to perform certain actions (such as applying global flags)
+	// just before the command is executed. Note that if you override the
+	// handler it is your responsibility to call the command.Execute function.
+	//
+	// The command passed into CommandHandler may be nil in case there is no
+	// command to be executed when parsing has finished.
+	CommandHandler func(command Commander, args []string) error
+
+	internalError error
 }
 
-// Parser options
+// SplitArgument represents the argument value of an option that was passed using
+// an argument separator.
+type SplitArgument interface {
+	// String returns the option's value as a string, and a boolean indicating
+	// if the option was present.
+	Value() (string, bool)
+}
+
+type strArgument struct {
+	value *string
+}
+
+func (s strArgument) Value() (string, bool) {
+	if s.value == nil {
+		return "", false
+	}
+
+	return *s.value, true
+}
+
+// Options provides parser options that change the behavior of the option
+// parser.
 type Options uint
 
 const (
-	// No options
+	// None indicates no options.
 	None Options = 0
 
-	// Add a default Help Options group to the parser containing -h and
-	// --help options. When either -h or --help is specified on the command
-	// line, a pretty formatted help message will be printed to os.Stderr.
-	// The parser will return ErrHelp.
+	// HelpFlag adds a default Help Options group to the parser containing
+	// -h and --help options. When either -h or --help is specified on the
+	// command line, the parser will return the special error of type
+	// ErrHelp. When PrintErrors is also specified, then the help message
+	// will also be automatically printed to os.Stderr.
 	HelpFlag = 1 << iota
 
-	// Pass all arguments after a double dash, --, as remaining command line
-	// arguments (i.e. they will not be parsed for flags)
+	// PassDoubleDash passes all arguments after a double dash, --, as
+	// remaining command line arguments (i.e. they will not be parsed for
+	// flags).
 	PassDoubleDash
 
-	// Ignore any unknown options and pass them as remaining command line
-	// arguments
+	// IgnoreUnknown ignores any unknown options and passes them as
+	// remaining command line arguments instead of generating an error.
 	IgnoreUnknown
 
-	// Print any errors which occured during parsing to os.Stderr
+	// PrintErrors prints any errors which occurred during parsing to
+	// os.Stderr.
 	PrintErrors
 
-	// Pass all arguments after the first non option. This is equivalent
-	// to strict POSIX processing
+	// PassAfterNonOption passes all arguments after the first non option
+	// as remaining command line arguments. This is equivalent to strict
+	// POSIX processing.
 	PassAfterNonOption
 
-	// A convenient default set of options
+	// Default is a convenient default set of options which should cover
+	// most of the uses of the flags package.
 	Default = HelpFlag | PrintErrors | PassDoubleDash
 )
+
+type parseState struct {
+	arg        string
+	args       []string
+	retargs    []string
+	positional []*Arg
+	err        error
+
+	command *Command
+	lookup  lookup
+}
 
 // Parse is a convenience function to parse command line options with default
 // settings. The provided data is a pointer to a struct representing the
@@ -89,14 +142,6 @@ func ParseArgs(data interface{}, args []string) ([]string, error) {
 	return NewParser(data, Default).ParseArgs(args)
 }
 
-// ParseIni is a convenience function to parse command line options with default
-// settings from an ini file. The provided data is a pointer to a struct
-// representing the default option group (named "Application Options"). For
-// more control, use flags.NewParser.
-func ParseIni(filename string, data interface{}) error {
-	return NewParser(data, Default).ParseIniFile(filename)
-}
-
 // NewParser creates a new parser. It uses os.Args[0] as the application
 // name and then calls Parser.NewNamedParser (see Parser.NewNamedParser for
 // more details). The provided data is a pointer to a struct representing the
@@ -104,63 +149,32 @@ func ParseIni(filename string, data interface{}) error {
 // group should not be added. The options parameter specifies a set of options
 // for the parser.
 func NewParser(data interface{}, options Options) *Parser {
-	if data == nil {
-		return NewNamedParser(path.Base(os.Args[0]), options)
+	p := NewNamedParser(path.Base(os.Args[0]), options)
+
+	if data != nil {
+		g, err := p.AddGroup("Application Options", "", data)
+
+		if err == nil {
+			g.parent = p
+		}
+
+		p.internalError = err
 	}
-
-	return NewNamedParser(path.Base(os.Args[0]), options, NewGroup("Application Options", data))
-}
-
-// NewNamedParser creates a new parser. The appname is used to display the
-// executable name in the builtin help message. An initial set of option groups
-// can be specified when constructing a parser, but you can also add additional
-// option groups later (see Parser.AddGroup).
-func NewNamedParser(appname string, options Options, groups ...*Group) *Parser {
-	ret := &Parser{
-		Commander: Commander{
-			Commands: make(map[string]*Group),
-		},
-
-		ApplicationName: appname,
-		Groups:          groups,
-		GroupsMap:       make(map[string]*Group),
-		Options:         options,
-		Usage:           "[OPTIONS]",
-	}
-
-	ret.EachGroup(func(index int, grp *Group) {
-		ret.GroupsMap[strings.ToLower(grp.Name)] = grp
-	})
-
-	return ret
-}
-
-// AddGroup adds a new group to the parser with the given name and data. The
-// data needs to be a pointer to a struct from which the fields indicate which
-// options are in the group.
-func (p *Parser) AddGroup(name string, data interface{}) *Parser {
-	group := NewGroup(name, data)
-
-	p.Groups = append(p.Groups, group)
-
-	group.each(0, func(index int, grp *Group) {
-		p.GroupsMap[strings.ToLower(group.Name)] = grp
-	})
 
 	return p
 }
 
-// AddCommand adds a new command to the parser with the given name and data. The
-// data needs to be a pointer to a struct from which the fields indicate which
-// options are in the command.
-func (p *Parser) AddCommand(command string, description string, longDescription string, data interface{}) *Parser {
-	p.AddGroup(description, data)
+// NewNamedParser creates a new parser. The appname is used to display the
+// executable name in the built-in help message. Option groups and commands can
+// be added to this parser by using AddGroup and AddCommand.
+func NewNamedParser(appname string, options Options) *Parser {
+	p := &Parser{
+		Command:            newCommand(appname, "", "", nil),
+		Options:            options,
+		NamespaceDelimiter: ".",
+	}
 
-	group := p.Groups[len(p.Groups)-1]
-	group.IsCommand = true
-	group.LongDescription = longDescription
-
-	p.Commands[command] = group
+	p.Command.parent = p
 
 	return p
 }
@@ -171,147 +185,6 @@ func (p *Parser) Parse() ([]string, error) {
 	return p.ParseArgs(os.Args[1:])
 }
 
-// ParseIniFile parses flags from an ini formatted file. See ParseIni for more
-// information on the ini file foramt. The returned errors can be of the type
-// flags.Error or flags.IniError.
-func (p *Parser) ParseIniFile(filename string) error {
-	p.storeDefaults()
-
-	ini, err := readIniFromFile(filename)
-
-	if err != nil {
-		return err
-	}
-
-	return p.parseIni(ini)
-}
-
-func (p *Parser) EachGroup(cb func(int, *Group)) {
-	if p.currentCommand != nil {
-		p.currentCommand.each(0, cb)
-	} else {
-		p.eachTopLevelGroup(cb)
-	}
-}
-
-// ParseIni parses flags from an ini format. You can use ParseIniFile as a
-// convenience function to parse from a filename instead of a general
-// io.Reader.
-//
-// The format of the ini file is as follows:
-//
-// [Option group name]
-// option = value
-//
-// Each section in the ini file represents an option group in the flags parser.
-// The default flags parser option group (i.e. when using flags.Parse) is
-// named 'Application Options'. The ini option name is matched in the following
-// order:
-//
-// 1. Compared to the ini-name tag on the option struct field (if present)
-// 2. Compared to the struct field name
-// 3. Compared to the option long name (if present)
-// 4. Compared to the option short name (if present)
-//
-// The returned errors can be of the type flags.Error or
-// flags.IniError.
-func (p *Parser) ParseIni(reader io.Reader) error {
-	p.storeDefaults()
-
-	ini, err := readIni(reader, "")
-
-	if err != nil {
-		return err
-	}
-
-	return p.parseIni(ini)
-}
-
-// WriteIniToFile writes the flags as ini format into a file. See WriteIni
-// for more information. The returned error occurs when the specified file
-// could not be opened for writing.
-func (p *Parser) WriteIniToFile(filename string, options IniOptions) error {
-	file, err := os.Create(filename)
-
-	if err != nil {
-		return err
-	}
-
-	defer file.Close()
-	p.WriteIni(file, options)
-
-	return nil
-}
-
-// WriteIni writes the current values of all the flags to an ini format.
-// See ParseIni for more information on the ini file format. You typically
-// call this only after settings have been parsed since the default values of each
-// option are stored just before parsing the flags (this is only relevant when
-// IniIncludeDefaults is _not_ set in options).
-func (p *Parser) WriteIni(writer io.Writer, options IniOptions) {
-	writeIni(p, writer, options)
-}
-
-func (p *Parser) levenshtein(s string, t string) int {
-	if len(s) == 0 {
-		return len(t)
-	}
-
-	if len(t) == 0 {
-		return len(s)
-	}
-
-	var l1, l2, l3 int
-
-	if len(s) == 1 {
-		l1 = len(t) + 1
-	} else {
-		l1 = p.levenshtein(s[1:len(s)-1], t) + 1
-	}
-
-	if len(t) == 1 {
-		l2 = len(s) + 1
-	} else {
-		l2 = p.levenshtein(t[1:len(t)-1], s) + 1
-	}
-
-	l3 = p.levenshtein(s[1:len(s)], t[1:len(t)])
-
-	if s[0] != t[0] {
-		l3 += 1
-	}
-
-	if l2 < l1 {
-		l1 = l2
-	}
-
-	if l1 < l3 {
-		return l1
-	}
-
-	return l3
-}
-
-func (p *Parser) closest(cmd string, commands []string) (string, int) {
-	if len(commands) == 0 {
-		return "", 0
-	}
-
-	mincmd := -1
-	mindist := -1
-
-	for i, c := range commands {
-		l := p.levenshtein(cmd, c)
-
-		if mincmd < 0 || l < mindist {
-			mindist = l
-			mincmd = i
-		}
-	}
-
-	return commands[mincmd], mindist
-}
-
 // ParseArgs parses the command line arguments according to the option groups that
 // were added to the parser. On successful parsing of the arguments, the
 // remaining, non-option, arguments (if any) are returned. The returned error
@@ -320,226 +193,501 @@ func (p *Parser) closest(cmd string, commands []string) (string, int) {
 //
 // When the common help group has been added (AddHelp) and either -h or --help
 // was specified in the command line arguments, a help message will be
-// automatically printed. Furthermore, the special error type ErrHelp is returned.
+// automatically printed if the PrintErrors option is enabled.
+// Furthermore, the special error type ErrHelp is returned.
 // It is up to the caller to exit the program if so desired.
 func (p *Parser) ParseArgs(args []string) ([]string, error) {
-	ret := make([]string, 0, len(args))
-	i := 0
+	if p.internalError != nil {
+		return nil, p.internalError
+	}
 
-	p.storeDefaults()
+	p.eachOption(func(c *Command, g *Group, option *Option) {
+		option.isSet = false
+		option.isSetDefault = false
+		option.updateDefaultLiteral()
+	})
 
+	// Add built-in help group to all commands if necessary
 	if (p.Options & HelpFlag) != None {
-		var showHelp = func() error {
-			var b bytes.Buffer
-			p.WriteHelp(&b)
-			return newError(ErrHelp, b.String())
-		}
-
-		// Windows CLI applications typically use /? for help while
-		// POSIX typically uses -h and --help.  Get a help group
-		// appropriate to the OS.
-		helpgrp := newHelpGroup(showHelp)
-
-		// Append the help group to toplevel
-		p.Groups = append([]*Group{helpgrp}, p.Groups...)
-
-		// Also append the help group to every command
-		p.Commander.EachCommand(func(command string, grp *Group) {
-			grp.EmbeddedGroups = append([]*Group{helpgrp}, grp.EmbeddedGroups...)
-		})
-
-		p.Options &^= HelpFlag
+		p.addHelpGroups(p.showBuiltinHelp)
 	}
 
-	required := make(map[*Option]struct{})
-	commands := make(map[string]*Group)
+	compval := os.Getenv("GO_FLAGS_COMPLETION")
 
-	for command, subgroup := range p.Commands {
-		commands[command] = subgroup
-	}
+	if len(compval) != 0 {
+		comp := &completion{parser: p}
+		items := comp.complete(args)
 
-	// Mark required arguments in a map
-	for _, group := range p.Groups {
-		for _, option := range group.Options {
-			if option.Required {
-				required[option] = struct{}{}
-			}
+		if p.CompletionHandler != nil {
+			p.CompletionHandler(items)
+		} else {
+			comp.print(items, compval == "verbose")
+			os.Exit(0)
 		}
 
-		// Initial set of commands
-		for command, subgroup := range group.Commands {
-			commands[command] = subgroup
-		}
+		return nil, nil
 	}
 
-	for i < len(args) {
-		arg := args[i]
-		i++
+	s := &parseState{
+		args:    args,
+		retargs: make([]string, 0, len(args)),
+	}
+
+	p.fillParseState(s)
+
+	for !s.eof() {
+		arg := s.pop()
 
 		// When PassDoubleDash is set and we encounter a --, then
 		// simply append all the rest as arguments and break out
 		if (p.Options&PassDoubleDash) != None && arg == "--" {
-			ret = append(ret, args[i:]...)
+			s.addArgs(s.args...)
 			break
 		}
 
-		// If the argument is not an option then
-		// 1) Check for subcommand
-		// 2) Append it to the rest if subcommand is not found
 		if !argumentIsOption(arg) {
-			if cmdgroup := commands[arg]; cmdgroup != nil {
-				// Set current 'root' group
-				p.currentCommand = cmdgroup
-
-				p.currentCommandString = append(p.currentCommandString,
-					arg)
-
-				commands = cmdgroup.Commands
-			} else {
-				if (p.Options & PassAfterNonOption) != None {
-					ret = append(ret, args[(i-1):]...)
-					break
-				} else {
-					ret = append(ret, arg)
-				}
+			// Note: this also sets s.err, so we can just check for
+			// nil here and use s.err later
+			if p.parseNonOption(s) != nil {
+				break
 			}
 
 			continue
 		}
 
 		var err error
-		var option *Option
 
-		optname, argument := splitOption(arg)
-		optname, islong := stripOptionPrefix(optname)
+		prefix, optname, islong := stripOptionPrefix(arg)
+		optname, _, argument := splitOption(prefix, optname, islong)
+
 		if islong {
-			err, i, option = p.parseLong(args, optname, argument, i)
+			err = p.parseLong(s, optname, argument)
 		} else {
-			for j, c := range optname {
-				clen := utf8.RuneLen(c)
-				islast := (j+clen == len(optname))
-
-				if !islast && argument == nil {
-					rr := optname[j+clen:]
-					next, _ := utf8.DecodeRuneInString(rr)
-					info, _ := p.getShort(c)
-
-					if info != nil && info.canArgument() {
-						if snext, _ := p.getShort(next); snext == nil {
-							// Consider the next stuff as an argument
-							argument = &rr
-							islast = true
-						}
-					}
-				}
-
-				err, i, option = p.parseShort(args, c, islast, argument, i)
-
-				if err != nil || islast {
-					break
-				}
-			}
+			err = p.parseShort(s, optname, argument)
 		}
 
 		if err != nil {
 			ignoreUnknown := (p.Options & IgnoreUnknown) != None
+			parseErr := wrapError(err)
 
-			parseErr, ok := err.(*Error)
-			if !ok {
-				parseErr = newError(ErrUnknown, err.Error())
+			if parseErr.Type != ErrUnknownFlag || (!ignoreUnknown && p.UnknownOptionHandler == nil) {
+				s.err = parseErr
+				break
 			}
 
 			if ignoreUnknown {
-				ret = append(ret, arg)
-			}
+				s.addArgs(arg)
+			} else if p.UnknownOptionHandler != nil {
+				modifiedArgs, err := p.UnknownOptionHandler(optname, strArgument{argument}, s.args)
 
-			if !(parseErr.Type == ErrUnknownFlag && ignoreUnknown) {
-				if (p.Options & PrintErrors) != None {
-					if parseErr.Type == ErrHelp {
-						fmt.Fprintln(os.Stderr, err)
-					} else {
-						fmt.Fprintf(os.Stderr, "Flags error: %s\n", err.Error())
-					}
+				if err != nil {
+					s.err = err
+					break
 				}
 
-				return nil, wrapError(err)
+				s.args = modifiedArgs
 			}
-		} else {
-			delete(required, option)
 		}
 	}
 
-	if len(required) > 0 {
-		names := make([]string, 0, len(required))
-
-		for k, _ := range required {
-			names = append(names, "`"+k.String()+"'")
-		}
-
-		var msg string
-
-		if len(names) == 1 {
-			msg = fmt.Sprintf("the required flag %s was not specified", names[0])
-		} else {
-			msg = fmt.Sprintf("the required flags %s and %s were not specified",
-				strings.Join(names[:len(names)-1], ", "), names[len(names)-1])
-		}
-
-		err := newError(ErrRequired, msg)
-
-		if (p.Options & PrintErrors) != None {
-			fmt.Fprintln(os.Stderr, err)
-		}
-
-		return nil, err
-	}
-
-	if p.currentCommand != nil {
-		// Execute group
-		cmd, ok := p.currentCommand.data.(Command)
-
-		if ok {
-			err := cmd.Execute(ret)
-
-			if err != nil && (p.Options&PrintErrors) != None {
-				fmt.Fprintln(os.Stderr, err)
+	if s.err == nil {
+		p.eachOption(func(c *Command, g *Group, option *Option) {
+			if option.preventDefault {
+				return
 			}
 
-			return nil, err
+			option.clearDefault()
+		})
+
+		s.checkRequired(p)
+	}
+
+	var reterr error
+
+	if s.err != nil {
+		reterr = s.err
+	} else if len(s.command.commands) != 0 && !s.command.SubcommandsOptional {
+		reterr = s.estimateCommand()
+	} else if cmd, ok := s.command.data.(Commander); ok {
+		if p.CommandHandler != nil {
+			reterr = p.CommandHandler(cmd, s.retargs)
+		} else {
+			reterr = cmd.Execute(s.retargs)
 		}
-	} else if len(commands) != 0 {
-		cmdnames := make([]string, 0, len(commands))
+	} else if p.CommandHandler != nil {
+		reterr = p.CommandHandler(nil, s.retargs)
+	}
 
-		for k, _ := range commands {
-			cmdnames = append(cmdnames, k)
+	if reterr != nil {
+		var retargs []string
+
+		if ourErr, ok := reterr.(*Error); !ok || ourErr.Type != ErrHelp {
+			retargs = append([]string{s.arg}, s.args...)
+		} else {
+			retargs = s.args
 		}
 
-		sort.Strings(cmdnames)
-		var msg string
+		return retargs, p.printError(reterr)
+	}
 
-		if len(ret) != 0 {
-			c, l := p.closest(ret[0], cmdnames)
-			msg = fmt.Sprintf("Unknown command `%s'", ret[0])
+	return s.retargs, nil
+}
 
-			if float32(l)/float32(len(c)) < 0.5 {
-				msg = fmt.Sprintf("%s, did you mean `%s'?", msg, c)
+func (p *parseState) eof() bool {
+	return len(p.args) == 0
+}
+
+func (p *parseState) pop() string {
+	if p.eof() {
+		return ""
+	}
+
+	p.arg = p.args[0]
+	p.args = p.args[1:]
+
+	return p.arg
+}
+
+func (p *parseState) peek() string {
+	if p.eof() {
+		return ""
+	}
+
+	return p.args[0]
+}
+
+func (p *parseState) checkRequired(parser *Parser) error {
+	c := parser.Command
+
+	var required []*Option
+
+	for c != nil {
+		c.eachGroup(func(g *Group) {
+			for _, option := range g.options {
+				if !option.isSet && option.Required {
+					required = append(required, option)
+				}
+			}
+		})
+
+		c = c.Active
+	}
+
+	if len(required) == 0 {
+		if len(p.positional) > 0 {
+			var reqnames []string
+
+			for _, arg := range p.positional {
+				argRequired := (!arg.isRemaining() && p.command.ArgsRequired) || arg.Required != -1 || arg.RequiredMaximum != -1
+
+				if !argRequired {
+					continue
+				}
+
+				if arg.isRemaining() {
+					if arg.value.Len() < arg.Required {
+						var arguments string
+
+						if arg.Required > 1 {
+							arguments = "arguments, but got only " + fmt.Sprintf("%d", arg.value.Len())
+						} else {
+							arguments = "argument"
+						}
+
+						reqnames = append(reqnames, "`"+arg.Name+" (at least "+fmt.Sprintf("%d", arg.Required)+" "+arguments+")`")
+					} else if arg.RequiredMaximum != -1 && arg.value.Len() > arg.RequiredMaximum {
+						if arg.RequiredMaximum == 0 {
+							reqnames = append(reqnames, "`"+arg.Name+" (zero arguments)`")
+						} else {
+							var arguments string
+
+							if arg.RequiredMaximum > 1 {
+								arguments = "arguments, but got " + fmt.Sprintf("%d", arg.value.Len())
+							} else {
+								arguments = "argument"
+							}
+
+							reqnames = append(reqnames, "`"+arg.Name+" (at most "+fmt.Sprintf("%d", arg.RequiredMaximum)+" "+arguments+")`")
+						}
+					}
+				} else {
+					reqnames = append(reqnames, "`"+arg.Name+"`")
+				}
+			}
+
+			if len(reqnames) == 0 {
+				return nil
+			}
+
+			var msg string
+
+			if len(reqnames) == 1 {
+				msg = fmt.Sprintf("the required argument %s was not provided", reqnames[0])
 			} else {
-				msg = fmt.Sprintf("%s. Please specify one command of: %s",
-					msg,
-					strings.Join(cmdnames, ", "))
+				msg = fmt.Sprintf("the required arguments %s and %s were not provided",
+					strings.Join(reqnames[:len(reqnames)-1], ", "), reqnames[len(reqnames)-1])
 			}
-		} else {
-			msg = fmt.Sprintf("Please specify one command of: %s", strings.Join(cmdnames, ", "))
+
+			p.err = newError(ErrRequired, msg)
+			return p.err
 		}
 
-		err := newError(ErrRequired, msg)
-
-		if (p.Options & PrintErrors) != None {
-			fmt.Fprintln(os.Stderr, msg)
-		}
-
-		return nil, err
+		return nil
 	}
 
-	return ret, nil
+	names := make([]string, 0, len(required))
+
+	for _, k := range required {
+		names = append(names, "`"+k.String()+"'")
+	}
+
+	sort.Strings(names)
+
+	var msg string
+
+	if len(names) == 1 {
+		msg = fmt.Sprintf("the required flag %s was not specified", names[0])
+	} else {
+		msg = fmt.Sprintf("the required flags %s and %s were not specified",
+			strings.Join(names[:len(names)-1], ", "), names[len(names)-1])
+	}
+
+	p.err = newError(ErrRequired, msg)
+	return p.err
+}
+
+func (p *parseState) estimateCommand() error {
+	commands := p.command.sortedVisibleCommands()
+	cmdnames := make([]string, len(commands))
+
+	for i, v := range commands {
+		cmdnames[i] = v.Name
+	}
+
+	var msg string
+	var errtype ErrorType
+
+	if len(p.retargs) != 0 {
+		c, l := closestChoice(p.retargs[0], cmdnames)
+		msg = fmt.Sprintf("Unknown command `%s'", p.retargs[0])
+		errtype = ErrUnknownCommand
+
+		if float32(l)/float32(len(c)) < 0.5 {
+			msg = fmt.Sprintf("%s, did you mean `%s'?", msg, c)
+		} else if len(cmdnames) == 1 {
+			msg = fmt.Sprintf("%s. You should use the %s command",
+				msg,
+				cmdnames[0])
+		} else {
+			msg = fmt.Sprintf("%s. Please specify one command of: %s or %s",
+				msg,
+				strings.Join(cmdnames[:len(cmdnames)-1], ", "),
+				cmdnames[len(cmdnames)-1])
+		}
+	} else {
+		errtype = ErrCommandRequired
+
+		if len(cmdnames) == 1 {
+			msg = fmt.Sprintf("Please specify the %s command", cmdnames[0])
+		} else {
+			msg = fmt.Sprintf("Please specify one command of: %s or %s",
+				strings.Join(cmdnames[:len(cmdnames)-1], ", "),
+				cmdnames[len(cmdnames)-1])
+		}
+	}
+
+	return newError(errtype, msg)
+}
+
+func (p *Parser) parseOption(s *parseState, name string, option *Option, canarg bool, argument *string) (err error) {
+	if !option.canArgument() {
+		if argument != nil {
+			return newErrorf(ErrNoArgumentForBool, "bool flag `%s' cannot have an argument", option)
+		}
+
+		err = option.set(nil)
+	} else if argument != nil || (canarg && !s.eof()) {
+		var arg string
+
+		if argument != nil {
+			arg = *argument
+		} else {
+			arg = s.pop()
+
+			if argumentIsOption(arg) && !(option.isSignedNumber() && len(arg) > 1 && arg[0] == '-' && arg[1] >= '0' && arg[1] <= '9') {
+				return newErrorf(ErrExpectedArgument, "expected argument for flag `%s', but got option `%s'", option, arg)
+			} else if p.Options&PassDoubleDash != 0 && arg == "--" {
+				return newErrorf(ErrExpectedArgument, "expected argument for flag `%s', but got double dash `--'", option)
+			}
+		}
+
+		if option.tag.Get("unquote") != "false" {
+			arg, err = unquoteIfPossible(arg)
+		}
+
+		if err == nil {
+			err = option.set(&arg)
+		}
+	} else if option.OptionalArgument {
+		option.empty()
+
+		for _, v := range option.OptionalValue {
+			err = option.set(&v)
+
+			if err != nil {
+				break
+			}
+		}
+	} else {
+		err = newErrorf(ErrExpectedArgument, "expected argument for flag `%s'", option)
+	}
+
+	if err != nil {
+		if _, ok := err.(*Error); !ok {
+			err = newErrorf(ErrMarshal, "invalid argument for flag `%s' (expected %s): %s",
+				option,
+				option.value.Type(),
+				err.Error())
+		}
+	}
+
+	return err
+}
+
+func (p *Parser) parseLong(s *parseState, name string, argument *string) error {
+	if option := s.lookup.longNames[name]; option != nil {
+		// Only long options that are required can consume an argument
+		// from the argument list
+		canarg := !option.OptionalArgument
+
+		return p.parseOption(s, name, option, canarg, argument)
+	}
+
+	return newErrorf(ErrUnknownFlag, "unknown flag `%s'", name)
+}
+
+func (p *Parser) splitShortConcatArg(s *parseState, optname string) (string, *string) {
+	c, n := utf8.DecodeRuneInString(optname)
+
+	if n == len(optname) {
+		return optname, nil
+	}
+
+	first := string(c)
+
+	if option := s.lookup.shortNames[first]; option != nil && option.canArgument() {
+		arg := optname[n:]
+		return first, &arg
+	}
+
+	return optname, nil
+}
+
+func (p *Parser) parseShort(s *parseState, optname string, argument *string) error {
+	if argument == nil {
+		optname, argument = p.splitShortConcatArg(s, optname)
+	}
+
+	for i, c := range optname {
+		shortname := string(c)
+
+		if option := s.lookup.shortNames[shortname]; option != nil {
+			// Only the last short argument can consume an argument from
+			// the arguments list, and only if it's non optional
+			canarg := (i+utf8.RuneLen(c) == len(optname)) && !option.OptionalArgument
+
+			if err := p.parseOption(s, shortname, option, canarg, argument); err != nil {
+				return err
+			}
+		} else {
+			return newErrorf(ErrUnknownFlag, "unknown flag `%s'", shortname)
+		}
+
+		// Only the first option can have a concatted argument, so just
+		// clear argument here
+		argument = nil
+	}
+
+	return nil
+}
+
+func (p *parseState) addArgs(args ...string) error {
+	for len(p.positional) > 0 && len(args) > 0 {
+		arg := p.positional[0]
+
+		if err := convert(args[0], arg.value, arg.tag); err != nil {
+			p.err = err
+			return err
+		}
+
+		if !arg.isRemaining() {
+			p.positional = p.positional[1:]
+		}
+
+		args = args[1:]
+	}
+
+	p.retargs = append(p.retargs, args...)
+	return nil
+}
+
+func (p *Parser) parseNonOption(s *parseState) error {
+	if len(s.positional) > 0 {
+		return s.addArgs(s.arg)
+	}
+
+	if len(s.command.commands) > 0 && len(s.retargs) == 0 {
+		if cmd := s.lookup.commands[s.arg]; cmd != nil {
+			s.command.Active = cmd
+			cmd.fillParseState(s)
+
+			return nil
+		} else if !s.command.SubcommandsOptional {
+			s.addArgs(s.arg)
+			return newErrorf(ErrUnknownCommand, "Unknown command `%s'", s.arg)
+		}
+	}
+
+	if (p.Options & PassAfterNonOption) != None {
+		// If PassAfterNonOption is set then all remaining arguments
+		// are considered positional
+		if err := s.addArgs(s.arg); err != nil {
+			return err
+		}
+
+		if err := s.addArgs(s.args...); err != nil {
+			return err
+		}
+
+		s.args = []string{}
+	} else {
+		return s.addArgs(s.arg)
+	}
+
+	return nil
+}
+
+func (p *Parser) showBuiltinHelp() error {
+	var b bytes.Buffer
+
+	p.WriteHelp(&b)
+	return newError(ErrHelp, b.String())
+}
+
+func (p *Parser) printError(err error) error {
+	if err != nil && (p.Options&PrintErrors) != None {
+		fmt.Fprintln(os.Stderr, err)
+	}
+
+	return err
+}
+
+func (p *Parser) clearIsSet() {
+	p.eachCommand(func(c *Command) {
+		c.eachGroup(func(g *Group) {
+			for _, option := range g.options {
+				option.isSet = false
+			}
+		})
+	}, true)
 }

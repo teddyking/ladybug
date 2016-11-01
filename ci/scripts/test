@@ -1,6 +1,62 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e -x
+
+# start a guardian process
+# more or less copied from https://github.com/cloudfoundry/garden-runc-release/blob/v1.0.1/ci/scripts/gats
+source gr-release-develop/ci/scripts/aufs
+cd gr-release-develop
+
+export GOROOT=/usr/local/go
+export PATH=$GOROOT/bin:$PATH
+export GOPATH=$PWD
+export PATH=$GOPATH/bin:$PATH
+
+mkdir -p "$GOPATH/bin"
+
+pushd src/github.com/opencontainers/runc
+GOPATH=$PWD/Godeps/_workspace:$GOPATH go build -tags "seccomp" -o runc .
+mv runc "$GOPATH/bin"
+popd
+
+pushd src/code.cloudfoundry.org/guardian/rundmc/nstar
+make
+popd
+
+pushd src/code.cloudfoundry.org/guardian
+go install -tags daemon code.cloudfoundry.org/guardian/cmd/guardian
+go install code.cloudfoundry.org/guardian/cmd/init
+go install code.cloudfoundry.org/guardian/cmd/dadoo
+
+tmpdir=/tmp/dir
+rm -fr $tmpdir
+mkdir $tmpdir
+mount -t tmpfs none $tmpdir
+
+mkdir $tmpdir/depot
+mkdir $tmpdir/snapshots
+mkdir $tmpdir/graph
+
+permit_device_control
+create_loop_devices 256
+
+$GOPATH/bin/guardian \
+  --init-bin=$GOPATH/bin/init \
+  --dadoo-bin=$GOPATH/bin/dadoo \
+  --nstar-bin=./rundmc/nstar/nstar \
+  --tar-bin=/opt/tar \
+  --depot=$tmpdir/depot \
+  --graph=$tmpdir/graph \
+  --bind-ip=0.0.0.0 \
+  --bind-port=7777 \
+  --default-grace-time=5m \
+  --log-level=error \
+  --default-rootfs=/opt/warden/rootfs &
+
+sleep 5
+popd
+
+cd ../
 
 export PATH=$PATH:/go/bin
 export GOPATH=$GOPATH:$(pwd)
