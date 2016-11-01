@@ -31,6 +31,6 @@ func main() {
 
 	_, err := parser.Parse()
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%s", err)
+		fmt.Fprintf(os.Stdout, "%s\n", err)
 	}
 }
