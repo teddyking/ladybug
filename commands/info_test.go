@@ -65,7 +65,7 @@ var _ = Describe("Info", func() {
 		})
 	})
 
-	Context("when garden returns an error", func() {
+	Context("there is an error retrieving containers", func() {
 		BeforeEach(func() {
 			fakeGardenClient.ContainersReturns(nil, errors.New("error-getting-containers"))
 		})

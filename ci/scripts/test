@@ -15,15 +15,16 @@ export PATH=$GOPATH/bin:$PATH
 mkdir -p "$GOPATH/bin"
 
 pushd src/github.com/opencontainers/runc
-GOPATH=$PWD/Godeps/_workspace:$GOPATH go build -tags "seccomp" -o runc .
-mv runc "$GOPATH/bin"
+   GOPATH=$PWD/Godeps/_workspace:$GOPATH go build -tags "seccomp" -o runc .
+   mv runc "$GOPATH/bin"
 popd
 
 pushd src/code.cloudfoundry.org/guardian/rundmc/nstar
-make
+   make
 popd
 
 pushd src/code.cloudfoundry.org/guardian
+
 go install -tags daemon code.cloudfoundry.org/guardian/cmd/guardian
 go install code.cloudfoundry.org/guardian/cmd/init
 go install code.cloudfoundry.org/guardian/cmd/dadoo
@@ -41,17 +42,17 @@ permit_device_control
 create_loop_devices 256
 
 $GOPATH/bin/guardian \
-  --init-bin=$GOPATH/bin/init \
-  --dadoo-bin=$GOPATH/bin/dadoo \
-  --nstar-bin=./rundmc/nstar/nstar \
-  --tar-bin=/opt/tar \
-  --depot=$tmpdir/depot \
-  --graph=$tmpdir/graph \
-  --bind-ip=0.0.0.0 \
-  --bind-port=7777 \
-  --default-grace-time=5m \
-  --log-level=error \
-  --default-rootfs=/opt/warden/rootfs &
+   --init-bin=$GOPATH/bin/init \
+   --dadoo-bin=$GOPATH/bin/dadoo \
+   --nstar-bin=./rundmc/nstar/nstar \
+   --tar-bin=/opt/tar \
+   --depot=$tmpdir/depot \
+   --graph=$tmpdir/graph \
+   --bind-ip=0.0.0.0 \
+   --bind-port=7777 \
+   --default-grace-time=5m \
+   --log-level=error \
+   --default-rootfs=/opt/warden/rootfs &
 
 sleep 5
 popd
