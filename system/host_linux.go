@@ -29,13 +29,13 @@ func (lh *LinuxHost) ContainerPids(handle string) ([]string, error) {
 	}
 
 	if _, err := os.Stat(bundleDir); os.IsNotExist(err) {
-		// container doesn't exist
+		// bundle dir not found - container doesn't exist
 		return nil, fmt.Errorf("Container with handle '%s' not found", handle)
 	}
 
 	if len(processesPaths) != len(pidfilePaths) {
-		// a pidfile is missing from one of the container's process dirs
-		return nil, fmt.Errorf("One of the container's process dirs is missing its pidfile")
+		// a pidfile is missing from one of a container's process dirs
+		return nil, fmt.Errorf("One or more pidfiles are missing")
 	}
 
 	var pids []string

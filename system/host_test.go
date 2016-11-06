@@ -90,6 +90,7 @@ var _ = Describe("Host", func() {
 			It("returns a meaningful error", func() {
 				_, err := linuxHost.ContainerPids("test-container")
 				Expect(err).To(HaveOccurred())
+
 				Expect(err.Error()).To(Equal("Depot directory at '/does/not/exist' not found"))
 			})
 		})
@@ -98,11 +99,12 @@ var _ = Describe("Host", func() {
 			It("returns a meaningful error", func() {
 				_, err := linuxHost.ContainerPids("test-container")
 				Expect(err).To(HaveOccurred())
+
 				Expect(err.Error()).To(Equal("Container with handle 'test-container' not found"))
 			})
 		})
 
-		Context("when one or more pidfiles does not exist", func() {
+		Context("when one or more pidfiles doesn't exist", func() {
 			BeforeEach(func() {
 				processPath := filepath.Join(fakeDepotDir, "test-container", "processes", "fake-process-id")
 
@@ -112,7 +114,8 @@ var _ = Describe("Host", func() {
 			It("returns a meaningful error", func() {
 				_, err := linuxHost.ContainerPids("test-container")
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(Equal("One of the container's process dirs is missing its pidfile"))
+
+				Expect(err.Error()).To(Equal("One or more pidfiles are missing"))
 			})
 		})
 	})
