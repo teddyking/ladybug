@@ -182,7 +182,7 @@ var _ = Describe("Host", func() {
 			Expect(createdAt).To(Equal("2016-11-12T18:24:23.744239181Z"))
 		})
 
-		Context("when the statfile doesn't contain the created time", func() {
+		Context("when the statefile doesn't contain the created time", func() {
 			BeforeEach(func() {
 				Expect(ioutil.WriteFile(statefilePath, []byte(`{"notcreated":"2016-11-12T18:24:23.744239181Z"}`), 0644)).To(Succeed())
 			})
@@ -206,7 +206,7 @@ var _ = Describe("Host", func() {
 			})
 		})
 
-		Context("when the statfile doesn't exist", func() {
+		Context("when the statefile doesn't exist", func() {
 			It("returns a meaningful error", func() {
 				_, err := linuxHost.ContainerCreationTime("container-not-here")
 				Expect(err).To(HaveOccurred())
