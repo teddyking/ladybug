@@ -3,11 +3,20 @@ jobs:
   plan:
   - get: ladybug-src
     trigger: true
+  - get: gr-release-develop
+    trigger: true
   - task: test
     file: ladybug-src/ci/test.yml
     privileged: true
 
 resources:
+- name: gr-release-develop
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/garden-runc-release.git
+    branch: develop
+    private_key: {{github-private-key}}
+
 - name: ladybug-src
   type: git
   source:
