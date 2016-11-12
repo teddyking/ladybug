@@ -25,6 +25,7 @@ type ContainerInfo struct {
 	Handle      string
 	Ip          string
 	ProcessName string
+	CreatedAt   string
 }
 
 type ContainersResult struct {
@@ -37,6 +38,7 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 			{Contents: "Handle"},
 			{Contents: "IP Address"},
 			{Contents: "Process Name"},
+			{Contents: "Created At"},
 		},
 	}
 
@@ -45,6 +47,7 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 			{Contents: containerInfo.Handle},
 			{Contents: containerInfo.Ip},
 			{Contents: containerInfo.ProcessName},
+			{Contents: containerInfo.CreatedAt},
 		}
 
 		table.Data = append(table.Data, row)

@@ -42,10 +42,11 @@ var _ = Describe("Resultprinter", func() {
 							Handle:      "test-handle",
 							Ip:          "192.0.2.10",
 							ProcessName: "ruby",
+							CreatedAt:   "12-11-2016 23:00:00",
 						},
 					},
 				},
-				"test-handle  192.0.2.10  ruby\n",
+				"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00\n",
 			),
 
 			Entry(
@@ -56,15 +57,17 @@ var _ = Describe("Resultprinter", func() {
 							Handle:      "test-handle",
 							Ip:          "192.0.2.10",
 							ProcessName: "ruby",
+							CreatedAt:   "12-11-2016 23:00:00",
 						},
 						ContainerInfo{
 							Handle:      "test-handle-2",
 							Ip:          "192.0.2.11",
 							ProcessName: "tree",
+							CreatedAt:   "12-11-2016 23:00:01",
 						},
 					},
 				},
-				"test-handle    192.0.2.10  ruby\ntest-handle-2  192.0.2.11  tree\n",
+				"test-handle    192.0.2.10  ruby  12-11-2016 23:00:00\ntest-handle-2  192.0.2.11  tree  12-11-2016 23:00:01\n",
 			),
 		)
 

@@ -2,6 +2,7 @@ package system
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -12,6 +13,11 @@ import (
 type LinuxHost struct {
 	DepotDir string
 	Proc     string
+	RunDir   string
+}
+
+type RuncContainerState struct {
+	Created string `json:"created"`
 }
 
 func (lh *LinuxHost) ContainerPids(handle string) ([]string, error) {
@@ -54,6 +60,7 @@ func (lh *LinuxHost) ContainerPids(handle string) ([]string, error) {
 func (lh *LinuxHost) ContainerProcessName(pid string) (string, error) {
 	statusfilePath := filepath.Join(lh.Proc, pid, "status")
 	statusfile, err := os.Open(statusfilePath)
+	defer statusfile.Close()
 	if err != nil {
 		return "", fmt.Errorf("Unable to open %s", statusfilePath)
 	}
@@ -68,4 +75,25 @@ func (lh *LinuxHost) ContainerProcessName(pid string) (string, error) {
 	}
 
 	return "N/A", nil
+}
+
+func (lh *LinuxHost) ContainerCreationTime(handle string) (string, error) {
+	statefilePath := filepath.Join(lh.RunDir, handle, "state.json")
+	statefile, err := os.Open(statefilePath)
+	defer statefile.Close()
+	if err != nil {
+		return "", fmt.Errorf("Unable to open %s", statefilePath)
+	}
+
+	var state RuncContainerState
+	if err := json.NewDecoder(statefile).Decode(&state); err != nil {
+		return "", err
+	}
+
+	createdAt := state.Created
+	if createdAt == "" {
+		createdAt = "N/A"
+	}
+
+	return createdAt, nil
 }

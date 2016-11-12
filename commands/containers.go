@@ -46,10 +46,16 @@ func (command *Containers) Execute(args []string) error {
 			}
 		}
 
+		containerCreationTime, err := command.Host.ContainerCreationTime(handle)
+		if err != nil {
+			return err
+		}
+
 		containerInfos = append(containerInfos, print.ContainerInfo{
 			Handle:      handle,
 			Ip:          containerInfo.ContainerIP,
 			ProcessName: containerProcessName,
+			CreatedAt:   containerCreationTime,
 		})
 	}
 

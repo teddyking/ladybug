@@ -26,6 +26,15 @@ type FakeHost struct {
 		result1 string
 		result2 error
 	}
+	ContainerCreationTimeStub        func(handle string) (string, error)
+	containerCreationTimeMutex       sync.RWMutex
+	containerCreationTimeArgsForCall []struct {
+		handle string
+	}
+	containerCreationTimeReturns struct {
+		result1 string
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -98,6 +107,40 @@ func (fake *FakeHost) ContainerProcessNameReturns(result1 string, result2 error)
 	}{result1, result2}
 }
 
+func (fake *FakeHost) ContainerCreationTime(handle string) (string, error) {
+	fake.containerCreationTimeMutex.Lock()
+	fake.containerCreationTimeArgsForCall = append(fake.containerCreationTimeArgsForCall, struct {
+		handle string
+	}{handle})
+	fake.recordInvocation("ContainerCreationTime", []interface{}{handle})
+	fake.containerCreationTimeMutex.Unlock()
+	if fake.ContainerCreationTimeStub != nil {
+		return fake.ContainerCreationTimeStub(handle)
+	} else {
+		return fake.containerCreationTimeReturns.result1, fake.containerCreationTimeReturns.result2
+	}
+}
+
+func (fake *FakeHost) ContainerCreationTimeCallCount() int {
+	fake.containerCreationTimeMutex.RLock()
+	defer fake.containerCreationTimeMutex.RUnlock()
+	return len(fake.containerCreationTimeArgsForCall)
+}
+
+func (fake *FakeHost) ContainerCreationTimeArgsForCall(i int) string {
+	fake.containerCreationTimeMutex.RLock()
+	defer fake.containerCreationTimeMutex.RUnlock()
+	return fake.containerCreationTimeArgsForCall[i].handle
+}
+
+func (fake *FakeHost) ContainerCreationTimeReturns(result1 string, result2 error) {
+	fake.ContainerCreationTimeStub = nil
+	fake.containerCreationTimeReturns = struct {
+		result1 string
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeHost) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -105,6 +148,8 @@ func (fake *FakeHost) Invocations() map[string][][]interface{} {
 	defer fake.containerPidsMutex.RUnlock()
 	fake.containerProcessNameMutex.RLock()
 	defer fake.containerProcessNameMutex.RUnlock()
+	fake.containerCreationTimeMutex.RLock()
+	defer fake.containerCreationTimeMutex.RUnlock()
 	return fake.invocations
 }
 

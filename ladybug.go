@@ -30,7 +30,7 @@ func main() {
 	parser.Parse()
 
 	gardenClient := client.New(connection.New("tcp", "127.0.0.1:7777"))
-	linuxHost := &sys.LinuxHost{DepotDir: appOptions.Depot, Proc: "/proc"}
+	linuxHost := &sys.LinuxHost{DepotDir: appOptions.Depot, Proc: "/proc", RunDir: "/var/run/runc"}
 	printer := print.NewResultPrinter(os.Stdout)
 
 	commands := []command{

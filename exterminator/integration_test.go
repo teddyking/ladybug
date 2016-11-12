@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/gomega"
 
 	"os/exec"
+	"strings"
+	"time"
 
 	"code.cloudfoundry.org/garden"
 	"github.com/onsi/gomega/gbytes"
@@ -80,11 +82,14 @@ var _ = Describe("ladybug", func() {
 	})
 
 	Context("when run with containers", func() {
+		var currentDate string
+
 		BeforeEach(func() {
 			// override the default depot dir path as the garden in the test
 			// uses /tmp/dir/depot and not /var/vcap/data/garden/depot
 			args = []string{"-d", "/tmp/dir/depot", "containers"}
 
+			currentDate = strings.Fields(time.Now().String())[0]
 			container, err := gardenClient.Create(garden.ContainerSpec{Handle: "containers-container"})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -106,6 +111,11 @@ var _ = Describe("ladybug", func() {
 
 		It("prints the containers' handles to stdout", func() {
 			Eventually(stdout).Should(gbytes.Say("containers-container"))
+		})
+
+		It("prints the containers' creation times to stdout", func() {
+			// actually prints the creation time but allow testing that
+			Eventually(stdout).Should(gbytes.Say(currentDate))
 		})
 
 		Context("when one or more of the containers has one or more processes", func() {

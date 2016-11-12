@@ -4,4 +4,5 @@ package system
 type Host interface {
 	ContainerPids(handle string) ([]string, error)
 	ContainerProcessName(pid string) (string, error)
+	ContainerCreationTime(handle string) (string, error)
 }

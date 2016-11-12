@@ -15,6 +15,7 @@ var _ = Describe("Host", func() {
 	var (
 		fakeDepotDir string
 		fakeProc     string
+		fakeRunDir   string
 		linuxHost    *LinuxHost
 	)
 
@@ -25,15 +26,18 @@ var _ = Describe("Host", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fakeProc, err = ioutil.TempDir("", "fake-proc")
 		Expect(err).NotTo(HaveOccurred())
+		fakeRunDir, err = ioutil.TempDir("", "fake-run-dir")
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	JustBeforeEach(func() {
-		linuxHost = &LinuxHost{DepotDir: fakeDepotDir, Proc: fakeProc}
+		linuxHost = &LinuxHost{DepotDir: fakeDepotDir, Proc: fakeProc, RunDir: fakeRunDir}
 	})
 
 	AfterEach(func() {
 		Expect(os.RemoveAll(fakeDepotDir)).To(Succeed())
 		Expect(os.RemoveAll(fakeProc)).To(Succeed())
+		Expect(os.RemoveAll(fakeRunDir)).To(Succeed())
 	})
 
 	Describe("ContainerPids", func() {
@@ -157,6 +161,57 @@ var _ = Describe("Host", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(processName).To(Equal("N/A"))
+			})
+		})
+	})
+
+	Describe("ContainerCreationTime", func() {
+		var statefilePath string
+
+		BeforeEach(func() {
+			containerRunPath := filepath.Join(fakeRunDir, "test-container")
+			Expect(os.MkdirAll(containerRunPath, 0755)).To(Succeed())
+			statefilePath = filepath.Join(containerRunPath, "state.json")
+			Expect(ioutil.WriteFile(statefilePath, []byte(`{"created":"2016-11-12T18:24:23.744239181Z"}`), 0644)).To(Succeed())
+		})
+
+		It("returns the time at which the container was created", func() {
+			createdAt, err := (linuxHost.ContainerCreationTime("test-container"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(createdAt).To(Equal("2016-11-12T18:24:23.744239181Z"))
+		})
+
+		Context("when the statfile doesn't contain the created time", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(statefilePath, []byte(`{"notcreated":"2016-11-12T18:24:23.744239181Z"}`), 0644)).To(Succeed())
+			})
+
+			It("returns a time of 'N/A'", func() {
+				createdAt, err := linuxHost.ContainerCreationTime("test-container")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(createdAt).To(Equal("N/A"))
+			})
+		})
+
+		Context("when there's an error decoding the JSON", func() {
+			BeforeEach(func() {
+				Expect(ioutil.WriteFile(statefilePath, []byte("this isn't JSON"), 0644)).To(Succeed())
+			})
+
+			It("returns the error", func() {
+				_, err := linuxHost.ContainerCreationTime("test-container")
+				Expect(err).To(HaveOccurred())
+			})
+		})
+
+		Context("when the statfile doesn't exist", func() {
+			It("returns a meaningful error", func() {
+				_, err := linuxHost.ContainerCreationTime("container-not-here")
+				Expect(err).To(HaveOccurred())
+
+				Expect(err.Error()).To(Equal(fmt.Sprintf("Unable to open %s/container-not-here/state.json", fakeRunDir)))
 			})
 		})
 	})

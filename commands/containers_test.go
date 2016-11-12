@@ -77,6 +77,7 @@ var _ = Describe("Containers", func() {
 
 			fakeHost.ContainerPidsReturns(fakePids, nil)
 			fakeHost.ContainerProcessNameReturns("test-process", nil)
+			fakeHost.ContainerCreationTimeReturns("test-time", nil)
 		})
 
 		It("generates the correct ContainersResult and prints it", func() {
@@ -88,6 +89,7 @@ var _ = Describe("Containers", func() {
 			Expect(generatedResult.ContainerInfos[0].Handle).To(Equal("test-container"))
 			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
 			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("test-process"))
+			Expect(generatedResult.ContainerInfos[0].CreatedAt).To(Equal("test-time"))
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
@@ -199,6 +201,20 @@ var _ = Describe("Containers", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("error-retrieving-container-process-name"))
+		})
+	})
+
+	Context("when there is an error retrieving ContainerCreationTime", func() {
+		JustBeforeEach(func() {
+			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer}, nil)
+			fakeHost.ContainerCreationTimeReturns("", errors.New("error-retrieving-container-creation-time"))
+		})
+
+		It("returns the error", func() {
+			err := containersCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-retrieving-container-creation-time"))
 		})
 	})
 
