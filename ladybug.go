@@ -9,6 +9,7 @@ import (
 
 	"github.com/jessevdk/go-flags"
 	"github.com/teddyking/ladybug/commands"
+	"github.com/teddyking/ladybug/print"
 	sys "github.com/teddyking/ladybug/system"
 )
 
@@ -30,10 +31,11 @@ func main() {
 
 	gardenClient := client.New(connection.New("tcp", "127.0.0.1:7777"))
 	linuxHost := &sys.LinuxHost{DepotDir: appOptions.Depot, Proc: "/proc"}
+	printer := print.NewResultPrinter(os.Stdout)
 
 	commands := []command{
 		{"info", "Print info about garden and the host", &commands.Info{Client: gardenClient, Out: os.Stdout}},
-		{"containers", "Print detailed info about containers on the host", &commands.Containers{Client: gardenClient, Out: os.Stdout, Host: linuxHost}},
+		{"containers", "Print detailed info about containers on the host", &commands.Containers{Client: gardenClient, Host: linuxHost, Printer: printer}},
 	}
 
 	for _, cmd := range commands {

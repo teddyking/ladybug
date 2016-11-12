@@ -6,6 +6,7 @@ import (
 	"github.com/concourse/fly/ui"
 )
 
+// go:generate counterfeiter . Printer
 type Printer interface {
 	PrintContainers(result ContainersResult) error
 }

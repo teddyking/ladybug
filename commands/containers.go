@@ -1,28 +1,28 @@
 package commands
 
 import (
-	"fmt"
-	"io"
-
 	"code.cloudfoundry.org/garden"
+	"github.com/teddyking/ladybug/print"
 	"github.com/teddyking/ladybug/system"
 )
 
 type Containers struct {
-	Client garden.Client
-	Host   system.Host
-	Out    io.Writer
+	Client  garden.Client
+	Host    system.Host
+	Printer print.Printer
 }
 
 func (command *Containers) Execute(args []string) error {
+	var result print.ContainersResult
+	var containerInfos []print.ContainerInfo
+
 	containers, err := command.Client.Containers(garden.Properties{})
 	if err != nil {
 		return err
 	}
 
 	if len(containers) == 0 {
-		command.Out.Write([]byte("0 running containers found on this host\n"))
-		return nil
+		return command.Printer.PrintContainers(result)
 	}
 
 	for _, container := range containers {
@@ -46,9 +46,13 @@ func (command *Containers) Execute(args []string) error {
 			}
 		}
 
-		detailedContainerInfo := fmt.Sprintf("%s - %s - %s\n", handle, containerInfo.ContainerIP, containerProcessName)
-		command.Out.Write([]byte(detailedContainerInfo))
+		containerInfos = append(containerInfos, print.ContainerInfo{
+			Handle:      handle,
+			Ip:          containerInfo.ContainerIP,
+			ProcessName: containerProcessName,
+		})
 	}
 
-	return nil
+	result.ContainerInfos = containerInfos
+	return command.Printer.PrintContainers(result)
 }

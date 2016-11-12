@@ -9,7 +9,7 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
-	"github.com/onsi/gomega/gbytes"
+	"github.com/teddyking/ladybug/print/printfakes"
 	"github.com/teddyking/ladybug/system/systemfakes"
 )
 
@@ -17,19 +17,21 @@ var _ = Describe("Containers", func() {
 	var (
 		fakeGardenClient  gardenfakes.FakeClient
 		fakeHost          systemfakes.FakeHost
+		fakePrinter       printfakes.FakePrinter
+		fakeContainer     *gardenfakes.FakeContainer
 		containersCommand *Containers
-		stdout            *gbytes.Buffer
 	)
 
 	BeforeEach(func() {
 		fakeGardenClient = gardenfakes.FakeClient{}
 		fakeHost = systemfakes.FakeHost{}
-		stdout = gbytes.NewBuffer()
+		fakePrinter = printfakes.FakePrinter{}
+		fakeContainer = &gardenfakes.FakeContainer{}
 
 		containersCommand = &Containers{
-			Client: &fakeGardenClient,
-			Host:   &fakeHost,
-			Out:    stdout,
+			Client:  &fakeGardenClient,
+			Host:    &fakeHost,
+			Printer: &fakePrinter,
 		}
 	})
 
@@ -38,10 +40,13 @@ var _ = Describe("Containers", func() {
 			fakeGardenClient.ContainersReturns([]garden.Container{}, nil)
 		})
 
-		It("prints a message saying that there aren't any containers to stdout", func() {
+		It("generates the correct ContainersResult and prints it", func() {
 			containersCommand.Execute(nil)
 
-			Expect(stdout).To(gbytes.Say("0 running containers found on this host\n"))
+			generatedResult := fakePrinter.PrintContainersArgsForCall(0)
+
+			Expect(len(generatedResult.ContainerInfos)).To(Equal(0))
+			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
 		It("doesn't return an error", func() {
@@ -51,12 +56,10 @@ var _ = Describe("Containers", func() {
 
 	Context("when garden reports 1 running container", func() {
 		var (
-			fakeContainer *gardenfakes.FakeContainer
-			fakePids      []string
+			fakePids []string
 		)
 
 		BeforeEach(func() {
-			fakeContainer = &gardenfakes.FakeContainer{}
 			fakePids = []string{"100"}
 		})
 
@@ -76,75 +79,72 @@ var _ = Describe("Containers", func() {
 			fakeHost.ContainerProcessNameReturns("test-process", nil)
 		})
 
-		It("prints detailed info about the container to stdout", func() {
+		It("generates the correct ContainersResult and prints it", func() {
 			containersCommand.Execute(nil)
 
-			Expect(fakeHost.ContainerProcessNameArgsForCall(0)).To(Equal("100"))
+			generatedResult := fakePrinter.PrintContainersArgsForCall(0)
 
-			Expect(stdout).To(gbytes.Say("test-container"))
-			Expect(stdout).To(gbytes.Say("192.0.2.10"))
-			Expect(stdout).To(gbytes.Say("test-process"))
+			Expect(len(generatedResult.ContainerInfos)).To(Equal(1))
+			Expect(generatedResult.ContainerInfos[0].Handle).To(Equal("test-container"))
+			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
+			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("test-process"))
+			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
 		It("doesn't return an error", func() {
 			Expect(containersCommand.Execute(nil)).To(Succeed())
 		})
+	})
 
-		Context("when there is an error retrieving ContainerInfo", func() {
-			JustBeforeEach(func() {
-				fakeContainer.InfoReturns(
-					garden.ContainerInfo{},
-					errors.New("error-retrieving-container-info"),
-				)
-			})
+	Context("when garden reports 1 running container", func() {
+		var (
+			fakeContainer2 *gardenfakes.FakeContainer
+		)
 
-			It("returns the error", func() {
-				Expect(containersCommand.Execute(nil)).NotTo(Succeed())
-			})
+		BeforeEach(func() {
+			fakeContainer2 = &gardenfakes.FakeContainer{}
 		})
 
-		Context("when there is an error retrieving ContainerPids", func() {
-			JustBeforeEach(func() {
-				fakeHost.ContainerPidsReturns(
-					nil,
-					errors.New("error-retrieving-container-pids"),
-				)
-			})
+		JustBeforeEach(func() {
+			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer, fakeContainer2}, nil)
 
-			It("returns the error", func() {
-				Expect(containersCommand.Execute(nil)).NotTo(Succeed())
-			})
+			fakeContainer.HandleReturns("test-container")
+			fakeContainer2.HandleReturns("test-container-2")
+			fakeContainer.InfoReturns(
+				garden.ContainerInfo{
+					ContainerIP: "192.0.2.10",
+				},
+				nil,
+			)
+			fakeContainer2.InfoReturns(
+				garden.ContainerInfo{
+					ContainerIP: "192.0.2.11",
+				},
+				nil,
+			)
 		})
 
-		Context("when there is an error retrieving ContainerProcessName", func() {
-			JustBeforeEach(func() {
-				fakeHost.ContainerProcessNameReturns(
-					"",
-					errors.New("error-retrieving-container-process-name"),
-				)
-			})
+		It("generates the correct ContainersResult and prints it", func() {
+			containersCommand.Execute(nil)
 
-			It("returns the error", func() {
-				Expect(containersCommand.Execute(nil)).NotTo(Succeed())
-			})
+			generatedResult := fakePrinter.PrintContainersArgsForCall(0)
+
+			Expect(len(generatedResult.ContainerInfos)).To(Equal(2))
+			Expect(generatedResult.ContainerInfos[0].Handle).To(Equal("test-container"))
+			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
+			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("N/A"))
+			Expect(generatedResult.ContainerInfos[1].Handle).To(Equal("test-container-2"))
+			Expect(generatedResult.ContainerInfos[1].Ip).To(Equal("192.0.2.11"))
+			Expect(generatedResult.ContainerInfos[1].ProcessName).To(Equal("N/A"))
+			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
-		Context("when the container isn't running any processes (other than init)", func() {
-			BeforeEach(func() {
-				fakePids = []string{}
-			})
-
-			It("prints N/A to stdout", func() {
-				containersCommand.Execute(nil)
-
-				Expect(stdout).To(gbytes.Say("test-container"))
-				Expect(stdout).To(gbytes.Say("192.0.2.10"))
-				Expect(stdout).To(gbytes.Say("N/A"))
-			})
+		It("doesn't return an error", func() {
+			Expect(containersCommand.Execute(nil)).To(Succeed())
 		})
 	})
 
-	Context("there is an error retrieving containers", func() {
+	Context("when there is an error retrieving containers", func() {
 		BeforeEach(func() {
 			fakeGardenClient.ContainersReturns(nil, errors.New("error-getting-containers"))
 		})
@@ -154,6 +154,64 @@ var _ = Describe("Containers", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("error-getting-containers"))
+		})
+	})
+
+	Context("when there is an error retrieving ContainerInfo", func() {
+		JustBeforeEach(func() {
+			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer}, nil)
+			fakeContainer.InfoReturns(garden.ContainerInfo{}, errors.New("error-retrieving-container-info"))
+		})
+
+		It("returns the error", func() {
+			err := containersCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-retrieving-container-info"))
+		})
+	})
+
+	Context("when there is an error retrieving ContainerPids", func() {
+		JustBeforeEach(func() {
+			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer}, nil)
+			fakeContainer.InfoReturns(garden.ContainerInfo{ProcessIDs: []string{"100"}}, nil)
+			fakeHost.ContainerPidsReturns(nil, errors.New("error-retrieving-container-pids"))
+		})
+
+		It("returns the error", func() {
+			err := containersCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-retrieving-container-pids"))
+		})
+	})
+
+	Context("when there is an error retrieving ContainerProcessName", func() {
+		JustBeforeEach(func() {
+			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer}, nil)
+			fakeContainer.InfoReturns(garden.ContainerInfo{ProcessIDs: []string{"100"}}, nil)
+			fakeHost.ContainerPidsReturns([]string{"100"}, nil)
+			fakeHost.ContainerProcessNameReturns("", errors.New("error-retrieving-container-process-name"))
+		})
+
+		It("returns the error", func() {
+			err := containersCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-retrieving-container-process-name"))
+		})
+	})
+
+	Context("when there is an error printing the result", func() {
+		BeforeEach(func() {
+			fakePrinter.PrintContainersReturns(errors.New("error-printing-result"))
+		})
+
+		It("returns the error", func() {
+			err := containersCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-printing-result"))
 		})
 	})
 })
