@@ -96,7 +96,7 @@ var _ = Describe("Containers", func() {
 		})
 	})
 
-	Context("when garden reports 1 running container", func() {
+	Context("when garden reports >1 running container", func() {
 		var (
 			fakeContainer2 *gardenfakes.FakeContainer
 		)
