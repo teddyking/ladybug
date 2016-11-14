@@ -10,7 +10,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("ladybug", func() {
+var _ = Describe("ladybug usage", func() {
 	var (
 		args    []string
 		session *gexec.Session
@@ -18,8 +18,6 @@ var _ = Describe("ladybug", func() {
 	)
 
 	BeforeEach(func() {
-		// depot dir gets created in ci/scripts/test
-		// and is set to /tmp/dir/depot
 		args = []string{"-d", "/tmp/dir/depot"}
 		stdout = gbytes.NewBuffer()
 	})
