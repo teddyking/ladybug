@@ -41,16 +41,12 @@ var _ = Describe("Containers", func() {
 		})
 
 		It("generates the correct ContainersResult and prints it", func() {
-			containersCommand.Execute(nil)
+			Expect(containersCommand.Execute(nil)).To(Succeed())
 
 			generatedResult := fakePrinter.PrintContainersArgsForCall(0)
 
 			Expect(len(generatedResult.ContainerInfos)).To(Equal(0))
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
-		})
-
-		It("doesn't return an error", func() {
-			Expect(containersCommand.Execute(nil)).To(Succeed())
 		})
 	})
 
@@ -58,10 +54,6 @@ var _ = Describe("Containers", func() {
 		var (
 			fakePids []string
 		)
-
-		BeforeEach(func() {
-			fakePids = []string{"100"}
-		})
 
 		JustBeforeEach(func() {
 			fakeGardenClient.ContainersReturns([]garden.Container{fakeContainer}, nil)
@@ -75,8 +67,6 @@ var _ = Describe("Containers", func() {
 				nil,
 			)
 
-			fakeHost.ContainerPidsReturns(fakePids, nil)
-			fakeHost.ContainerProcessNameReturns("test-process", nil)
 			fakeHost.ContainerCreationTimeReturns("test-time", nil)
 		})
 
@@ -88,17 +78,28 @@ var _ = Describe("Containers", func() {
 			Expect(len(generatedResult.ContainerInfos)).To(Equal(1))
 			Expect(generatedResult.ContainerInfos[0].Handle).To(Equal("test-container"))
 			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
-			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("test-process"))
+			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("N/A"))
 			Expect(generatedResult.ContainerInfos[0].CreatedAt).To(Equal("test-time"))
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
-		It("doesn't return an error", func() {
-			Expect(containersCommand.Execute(nil)).To(Succeed())
+		Context("and that container has 1 running process", func() {
+			BeforeEach(func() {
+				fakePids = []string{"100"}
+				fakeHost.ContainerPidsReturns(fakePids, nil)
+				fakeHost.ContainerProcessNameReturns("test-process", nil)
+			})
+
+			It("generates the correct ContainersResult and prints it", func() {
+				Expect(containersCommand.Execute(nil)).To(Succeed())
+
+				generatedResult := fakePrinter.PrintContainersArgsForCall(0)
+				Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("test-process"))
+			})
 		})
 	})
 
-	Context("when garden reports >1 running container", func() {
+	Context("when garden reports > 1 running container", func() {
 		var (
 			fakeContainer2 *gardenfakes.FakeContainer
 		)
@@ -124,10 +125,12 @@ var _ = Describe("Containers", func() {
 				},
 				nil,
 			)
+
+			fakeHost.ContainerCreationTimeReturns("test-time", nil)
 		})
 
 		It("generates the correct ContainersResult and prints it", func() {
-			containersCommand.Execute(nil)
+			Expect(containersCommand.Execute(nil)).To(Succeed())
 
 			generatedResult := fakePrinter.PrintContainersArgsForCall(0)
 
@@ -135,14 +138,12 @@ var _ = Describe("Containers", func() {
 			Expect(generatedResult.ContainerInfos[0].Handle).To(Equal("test-container"))
 			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
 			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("N/A"))
+			Expect(generatedResult.ContainerInfos[0].CreatedAt).To(Equal("test-time"))
 			Expect(generatedResult.ContainerInfos[1].Handle).To(Equal("test-container-2"))
 			Expect(generatedResult.ContainerInfos[1].Ip).To(Equal("192.0.2.11"))
 			Expect(generatedResult.ContainerInfos[1].ProcessName).To(Equal("N/A"))
+			Expect(generatedResult.ContainerInfos[1].CreatedAt).To(Equal("test-time"))
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
-		})
-
-		It("doesn't return an error", func() {
-			Expect(containersCommand.Execute(nil)).To(Succeed())
 		})
 	})
 
