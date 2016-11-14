@@ -52,7 +52,8 @@ var _ = Describe("Containers", func() {
 
 	Context("when garden reports 1 running container", func() {
 		var (
-			fakePids []string
+			fakePids         []string
+			fakePortMappings []garden.PortMapping
 		)
 
 		JustBeforeEach(func() {
@@ -63,6 +64,7 @@ var _ = Describe("Containers", func() {
 				garden.ContainerInfo{
 					ContainerIP: "192.0.2.10",
 					ProcessIDs:  fakePids,
+					MappedPorts: fakePortMappings,
 				},
 				nil,
 			)
@@ -80,6 +82,7 @@ var _ = Describe("Containers", func() {
 			Expect(generatedResult.ContainerInfos[0].Ip).To(Equal("192.0.2.10"))
 			Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("N/A"))
 			Expect(generatedResult.ContainerInfos[0].CreatedAt).To(Equal("test-time"))
+			Expect(generatedResult.ContainerInfos[0].PortMappings).To(Equal(fakePortMappings))
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
 		})
 
@@ -95,6 +98,32 @@ var _ = Describe("Containers", func() {
 
 				generatedResult := fakePrinter.PrintContainersArgsForCall(0)
 				Expect(generatedResult.ContainerInfos[0].ProcessName).To(Equal("test-process"))
+			})
+		})
+
+		Context("and that container has 1 PortMapping", func() {
+			BeforeEach(func() {
+				fakePortMappings = []garden.PortMapping{{80, 8080}}
+			})
+
+			It("generates the correct ContainersResult and prints it", func() {
+				Expect(containersCommand.Execute(nil)).To(Succeed())
+
+				generatedResult := fakePrinter.PrintContainersArgsForCall(0)
+				Expect(generatedResult.ContainerInfos[0].PortMappings).To(Equal(fakePortMappings))
+			})
+		})
+
+		Context("and that container has 2 PortMappings", func() {
+			BeforeEach(func() {
+				fakePortMappings = []garden.PortMapping{{80, 8080}, {443, 4443}}
+			})
+
+			It("generates the correct ContainersResult and prints it", func() {
+				Expect(containersCommand.Execute(nil)).To(Succeed())
+
+				generatedResult := fakePrinter.PrintContainersArgsForCall(0)
+				Expect(generatedResult.ContainerInfos[0].PortMappings).To(Equal(fakePortMappings))
 			})
 		})
 	})

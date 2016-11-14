@@ -52,10 +52,11 @@ func (command *Containers) Execute(args []string) error {
 		}
 
 		containerInfos = append(containerInfos, print.ContainerInfo{
-			Handle:      handle,
-			Ip:          containerInfo.ContainerIP,
-			ProcessName: containerProcessName,
-			CreatedAt:   containerCreationTime,
+			Handle:       handle,
+			Ip:           containerInfo.ContainerIP,
+			ProcessName:  containerProcessName,
+			CreatedAt:    containerCreationTime,
+			PortMappings: containerInfo.MappedPorts,
 		})
 	}
 

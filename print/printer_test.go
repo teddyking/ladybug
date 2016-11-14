@@ -9,6 +9,7 @@ import (
 	"errors"
 	"io"
 
+	"code.cloudfoundry.org/garden"
 	"github.com/onsi/gomega/gbytes"
 )
 
@@ -35,22 +36,55 @@ var _ = Describe("Resultprinter", func() {
 			},
 
 			Entry(
-				"with 1 ContainerInfos",
+				"with 1 ContainerInfos, 0 PortMappings",
 				ContainersResult{
 					ContainerInfos: []ContainerInfo{
 						ContainerInfo{
-							Handle:      "test-handle",
-							Ip:          "192.0.2.10",
-							ProcessName: "ruby",
-							CreatedAt:   "12-11-2016 23:00:00",
+							Handle:       "test-handle",
+							Ip:           "192.0.2.10",
+							ProcessName:  "ruby",
+							CreatedAt:    "12-11-2016 23:00:00",
+							PortMappings: []garden.PortMapping{},
 						},
 					},
 				},
-				"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00\n",
+				"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  N/A\n",
 			),
 
 			Entry(
-				"with 2 ContainerInfos",
+				"with 1 ContainerInfos, 1 PortMapping",
+				ContainersResult{
+					ContainerInfos: []ContainerInfo{
+						ContainerInfo{
+							Handle:       "test-handle",
+							Ip:           "192.0.2.10",
+							ProcessName:  "ruby",
+							CreatedAt:    "12-11-2016 23:00:00",
+							PortMappings: []garden.PortMapping{{80, 8080}},
+						},
+					},
+				},
+				"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  80->8080\n",
+			),
+
+			Entry(
+				"with 1 ContainerInfos and 2 PortMappings",
+				ContainersResult{
+					ContainerInfos: []ContainerInfo{
+						ContainerInfo{
+							Handle:       "test-handle",
+							Ip:           "192.0.2.10",
+							ProcessName:  "ruby",
+							CreatedAt:    "12-11-2016 23:00:00",
+							PortMappings: []garden.PortMapping{{80, 8080}, {443, 4443}},
+						},
+					},
+				},
+				"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  80->8080, 443->4443\n",
+			),
+
+			Entry(
+				"with 2 ContainerInfos, each with 0 PortMappings",
 				ContainersResult{
 					ContainerInfos: []ContainerInfo{
 						ContainerInfo{
@@ -67,7 +101,7 @@ var _ = Describe("Resultprinter", func() {
 						},
 					},
 				},
-				"test-handle    192.0.2.10  ruby  12-11-2016 23:00:00\ntest-handle-2  192.0.2.11  tree  12-11-2016 23:00:01\n",
+				"test-handle    192.0.2.10  ruby  12-11-2016 23:00:00  N/A\ntest-handle-2  192.0.2.11  tree  12-11-2016 23:00:01  N/A\n",
 			),
 		)
 

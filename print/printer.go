@@ -1,8 +1,11 @@
 package print
 
 import (
+	"fmt"
 	"io"
+	"strings"
 
+	"code.cloudfoundry.org/garden"
 	"github.com/concourse/fly/ui"
 )
 
@@ -22,10 +25,11 @@ func NewResultPrinter(out io.Writer) *ResultPrinter {
 }
 
 type ContainerInfo struct {
-	Handle      string
-	Ip          string
-	ProcessName string
-	CreatedAt   string
+	Handle       string
+	Ip           string
+	ProcessName  string
+	CreatedAt    string
+	PortMappings []garden.PortMapping
 }
 
 type ContainersResult struct {
@@ -39,6 +43,7 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 			{Contents: "IP Address"},
 			{Contents: "Process Name"},
 			{Contents: "Created At"},
+			{Contents: "Port Mappings"},
 		},
 	}
 
@@ -49,6 +54,17 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 			{Contents: containerInfo.ProcessName},
 			{Contents: containerInfo.CreatedAt},
 		}
+
+		var mappedPortsResult string
+		if len(containerInfo.PortMappings) > 0 {
+			for _, portMapping := range containerInfo.PortMappings {
+				mappedPortsResult = fmt.Sprintf("%s%d->%d, ", mappedPortsResult, portMapping.HostPort, portMapping.ContainerPort)
+			}
+		}
+		if mappedPortsResult == "" {
+			mappedPortsResult = "N/A"
+		}
+		row = append(row, ui.TableCell{Contents: strings.Trim(mappedPortsResult, ", ")})
 
 		table.Data = append(table.Data, row)
 	}

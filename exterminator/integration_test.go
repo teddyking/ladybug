@@ -82,15 +82,19 @@ var _ = Describe("ladybug", func() {
 	})
 
 	Context("when run with containers", func() {
-		var currentDate string
+		var (
+			container   garden.Container
+			currentDate string
+		)
 
 		BeforeEach(func() {
 			// override the default depot dir path as the garden in the test
 			// uses /tmp/dir/depot and not /var/vcap/data/garden/depot
 			args = []string{"-d", "/tmp/dir/depot", "containers"}
 
+			var err error
 			currentDate = strings.Fields(time.Now().String())[0]
-			container, err := gardenClient.Create(garden.ContainerSpec{Handle: "containers-container"})
+			container, err = gardenClient.Create(garden.ContainerSpec{Handle: "containers-container"})
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = container.Run(garden.ProcessSpec{
@@ -121,6 +125,17 @@ var _ = Describe("ladybug", func() {
 		Context("when one or more of the containers has one or more processes", func() {
 			It("prints the process' names to stdout", func() {
 				Eventually(stdout).Should(gbytes.Say("sleep"))
+			})
+		})
+
+		Context("when one or more of the containers has one or more port mappings", func() {
+			BeforeEach(func() {
+				_, _, err := container.NetIn(1122, 1122)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("prints the port mappings to stdout", func() {
+				Eventually(stdout).Should(gbytes.Say("1122->1122"))
 			})
 		})
 
