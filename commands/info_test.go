@@ -1,31 +1,31 @@
 package commands_test
 
 import (
+	"errors"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/teddyking/ladybug/commands"
 
-	"errors"
-
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
-	"github.com/onsi/gomega/gbytes"
+	"github.com/teddyking/ladybug/print/printfakes"
 )
 
 var _ = Describe("Info", func() {
 	var (
 		fakeGardenClient gardenfakes.FakeClient
 		infoCommand      *Info
-		stdout           *gbytes.Buffer
+		fakePrinter      printfakes.FakePrinter
 	)
 
 	BeforeEach(func() {
 		fakeGardenClient = gardenfakes.FakeClient{}
-		stdout = gbytes.NewBuffer()
+		fakePrinter = printfakes.FakePrinter{}
 
 		infoCommand = &Info{
-			Client: &fakeGardenClient,
-			Out:    stdout,
+			Client:  &fakeGardenClient,
+			Printer: &fakePrinter,
 		}
 	})
 
@@ -34,10 +34,13 @@ var _ = Describe("Info", func() {
 			fakeGardenClient.ContainersReturns([]garden.Container{}, nil)
 		})
 
-		It("prints 0 running containers to stdout", func() {
+		It("generates the correct InfoResult and prints it", func() {
 			infoCommand.Execute(nil)
 
-			Expect(stdout).To(gbytes.Say("Running containers: 0\n"))
+			Expect(fakePrinter.PrintInfoCallCount()).To(Equal(1))
+			generatedResult := fakePrinter.PrintInfoArgsForCall(0)
+
+			Expect(generatedResult.ContainersCount).To(Equal(0))
 		})
 	})
 
@@ -46,22 +49,28 @@ var _ = Describe("Info", func() {
 			fakeGardenClient.ContainersReturns([]garden.Container{nil}, nil)
 		})
 
-		It("prints 1 running containers to stdout", func() {
+		It("generates the correct InfoResult and prints it", func() {
 			infoCommand.Execute(nil)
 
-			Expect(stdout).To(gbytes.Say("Running containers: 1\n"))
+			Expect(fakePrinter.PrintInfoCallCount()).To(Equal(1))
+			generatedResult := fakePrinter.PrintInfoArgsForCall(0)
+
+			Expect(generatedResult.ContainersCount).To(Equal(1))
 		})
 	})
 
-	Context("when garden reports > 1 running containers", func() {
+	Context("when garden reports > 1 running container", func() {
 		BeforeEach(func() {
 			fakeGardenClient.ContainersReturns([]garden.Container{nil, nil}, nil)
 		})
 
-		It("prints > 1 running containers to stdout", func() {
+		It("generates the correct InfoResult and prints it", func() {
 			infoCommand.Execute(nil)
 
-			Expect(stdout).To(gbytes.Say("Running containers: 2\n"))
+			Expect(fakePrinter.PrintInfoCallCount()).To(Equal(1))
+			generatedResult := fakePrinter.PrintInfoArgsForCall(0)
+
+			Expect(generatedResult.ContainersCount).To(Equal(2))
 		})
 	})
 
@@ -75,6 +84,19 @@ var _ = Describe("Info", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("error-getting-containers"))
+		})
+	})
+
+	Context("when there is an error printing the result", func() {
+		BeforeEach(func() {
+			fakePrinter.PrintInfoReturns(errors.New("error-printing-result"))
+		})
+
+		It("returns the error", func() {
+			err := infoCommand.Execute(nil)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("error-printing-result"))
 		})
 	})
 })

@@ -1,23 +1,24 @@
 package commands
 
 import (
-	"fmt"
-	"io"
-
 	"code.cloudfoundry.org/garden"
+	"github.com/teddyking/ladybug/print"
 )
 
 type Info struct {
-	Client garden.Client
-	Out    io.Writer
+	Client  garden.Client
+	Printer print.Printer
 }
 
 func (command *Info) Execute(args []string) error {
+	var result print.InfoResult
+
 	containers, err := command.Client.Containers(garden.Properties{})
 	if err != nil {
 		return err
 	}
 
-	command.Out.Write([]byte(fmt.Sprintf("Running containers: %d\n", len(containers))))
-	return nil
+	result.ContainersCount = len(containers)
+
+	return command.Printer.PrintInfo(result)
 }

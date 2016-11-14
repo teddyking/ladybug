@@ -5,6 +5,7 @@ import "io"
 // go:generate counterfeiter . Printer
 type Printer interface {
 	PrintContainers(result ContainersResult) error
+	PrintInfo(result InfoResult) error
 }
 
 type ResultPrinter struct {

@@ -16,6 +16,14 @@ type FakePrinter struct {
 	printContainersReturns struct {
 		result1 error
 	}
+	PrintInfoStub        func(result print.InfoResult) error
+	printInfoMutex       sync.RWMutex
+	printInfoArgsForCall []struct {
+		result print.InfoResult
+	}
+	printInfoReturns struct {
+		result1 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -53,11 +61,46 @@ func (fake *FakePrinter) PrintContainersReturns(result1 error) {
 	}{result1}
 }
 
+func (fake *FakePrinter) PrintInfo(result print.InfoResult) error {
+	fake.printInfoMutex.Lock()
+	fake.printInfoArgsForCall = append(fake.printInfoArgsForCall, struct {
+		result print.InfoResult
+	}{result})
+	fake.recordInvocation("PrintInfo", []interface{}{result})
+	fake.printInfoMutex.Unlock()
+	if fake.PrintInfoStub != nil {
+		return fake.PrintInfoStub(result)
+	} else {
+		return fake.printInfoReturns.result1
+	}
+}
+
+func (fake *FakePrinter) PrintInfoCallCount() int {
+	fake.printInfoMutex.RLock()
+	defer fake.printInfoMutex.RUnlock()
+	return len(fake.printInfoArgsForCall)
+}
+
+func (fake *FakePrinter) PrintInfoArgsForCall(i int) print.InfoResult {
+	fake.printInfoMutex.RLock()
+	defer fake.printInfoMutex.RUnlock()
+	return fake.printInfoArgsForCall[i].result
+}
+
+func (fake *FakePrinter) PrintInfoReturns(result1 error) {
+	fake.PrintInfoStub = nil
+	fake.printInfoReturns = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakePrinter) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.printContainersMutex.RLock()
 	defer fake.printContainersMutex.RUnlock()
+	fake.printInfoMutex.RLock()
+	defer fake.printInfoMutex.RUnlock()
 	return fake.invocations
 }
 
