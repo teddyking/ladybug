@@ -19,7 +19,7 @@ Running containers: 1
 
 # ladybug containers
 
-Handle        IP Address  Process Name  Created At                      Port Mappings
+Handle        IP Address  Process Name  Created At           Port Mappings
 my-container  10.254.0.6  ruby          2016-11-14 13:48:57  60000->80, 60001->81
 ```
 
