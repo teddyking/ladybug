@@ -36,7 +36,7 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 			{Contents: containerInfo.Handle},
 			{Contents: containerInfo.Ip},
 			{Contents: containerInfo.ProcessName},
-			{Contents: containerInfo.CreatedAt},
+			{Contents: trimTime(containerInfo.CreatedAt)},
 		}
 
 		var mappedPortsResult string
@@ -54,4 +54,10 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 	}
 
 	return table.Render(r.Out)
+}
+
+func trimTime(t string) string {
+	// expects a string of the format 2016-11-15T06:48:15.137799416Z
+	// and returns a string of the format 2016-11-15 06:48:15
+	return strings.Replace(strings.Split(t, ".")[0], "T", " ", 1)
 }

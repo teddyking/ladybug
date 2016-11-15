@@ -41,12 +41,12 @@ var _ = Describe("PrintContainers", func() {
 						Handle:       "test-handle",
 						Ip:           "192.0.2.10",
 						ProcessName:  "ruby",
-						CreatedAt:    "12-11-2016 23:00:00",
+						CreatedAt:    "2016-11-15T06:48:15.137799416Z",
 						PortMappings: []garden.PortMapping{},
 					},
 				},
 			},
-			"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  N/A\n",
+			"test-handle  192.0.2.10  ruby  2016-11-15 06:48:15  N/A\n",
 		),
 
 		Entry(
@@ -57,12 +57,12 @@ var _ = Describe("PrintContainers", func() {
 						Handle:       "test-handle",
 						Ip:           "192.0.2.10",
 						ProcessName:  "ruby",
-						CreatedAt:    "12-11-2016 23:00:00",
+						CreatedAt:    "2016-11-15T06:48:15.137799416Z",
 						PortMappings: []garden.PortMapping{{80, 8080}},
 					},
 				},
 			},
-			"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  80->8080\n",
+			"test-handle  192.0.2.10  ruby  2016-11-15 06:48:15  80->8080\n",
 		),
 
 		Entry(
@@ -73,12 +73,12 @@ var _ = Describe("PrintContainers", func() {
 						Handle:       "test-handle",
 						Ip:           "192.0.2.10",
 						ProcessName:  "ruby",
-						CreatedAt:    "12-11-2016 23:00:00",
+						CreatedAt:    "2016-11-15T06:48:15.137799416Z",
 						PortMappings: []garden.PortMapping{{80, 8080}, {443, 4443}},
 					},
 				},
 			},
-			"test-handle  192.0.2.10  ruby  12-11-2016 23:00:00  80->8080, 443->4443\n",
+			"test-handle  192.0.2.10  ruby  2016-11-15 06:48:15  80->8080, 443->4443\n",
 		),
 
 		Entry(
@@ -89,17 +89,17 @@ var _ = Describe("PrintContainers", func() {
 						Handle:      "test-handle",
 						Ip:          "192.0.2.10",
 						ProcessName: "ruby",
-						CreatedAt:   "12-11-2016 23:00:00",
+						CreatedAt:   "2016-11-15T06:48:15.137799416Z",
 					},
 					ContainerInfo{
 						Handle:      "test-handle-2",
 						Ip:          "192.0.2.11",
 						ProcessName: "tree",
-						CreatedAt:   "12-11-2016 23:00:01",
+						CreatedAt:   "2016-11-15T06:48:15.137799416Z",
 					},
 				},
 			},
-			"test-handle    192.0.2.10  ruby  12-11-2016 23:00:00  N/A\ntest-handle-2  192.0.2.11  tree  12-11-2016 23:00:01  N/A\n",
+			"test-handle    192.0.2.10  ruby  2016-11-15 06:48:15  N/A\ntest-handle-2  192.0.2.11  tree  2016-11-15 06:48:15  N/A\n",
 		),
 	)
 
