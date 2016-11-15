@@ -34,7 +34,7 @@ func main() {
 	printer := print.NewResultPrinter(os.Stdout)
 
 	commands := []command{
-		{"info", "Print info about garden and the host", &commands.Info{Client: gardenClient, Out: os.Stdout}},
+		{"info", "Print info about garden and the host", &commands.Info{Client: gardenClient, Printer: printer}},
 		{"containers", "Print detailed info about containers on the host", &commands.Containers{Client: gardenClient, Host: linuxHost, Printer: printer}},
 	}
 

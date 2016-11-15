@@ -32,4 +32,18 @@ var _ = Describe("PrintInfo", func() {
 
 		Eventually(stdout).Should(gbytes.Say("Running containers: 3"))
 	})
+
+	Context("when there is an error writing to Out", func() {
+		BeforeEach(func() {
+			stdout = ErroringWriter{}
+		})
+
+		It("returns the error", func() {
+			result := InfoResult{}
+			err := resultPrinter.PrintInfo(result)
+
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("error-writing-to-writer"))
+		})
+	})
 })

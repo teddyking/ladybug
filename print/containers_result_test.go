@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/teddyking/ladybug/print"
 
-	"errors"
 	"io"
 
 	"code.cloudfoundry.org/garden"
@@ -106,7 +105,7 @@ var _ = Describe("PrintContainers", func() {
 
 	Context("when the table Render returns an error", func() {
 		BeforeEach(func() {
-			stdout = erroringWriter{}
+			stdout = ErroringWriter{}
 		})
 
 		It("returns the error", func() {
@@ -127,9 +126,3 @@ var _ = Describe("PrintContainers", func() {
 		})
 	})
 })
-
-type erroringWriter struct{}
-
-func (e erroringWriter) Write(p []byte) (int, error) {
-	return 0, errors.New("error-writing-to-writer")
-}
