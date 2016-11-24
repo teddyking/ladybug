@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/onsi/gomega/gbytes"
+	"github.com/teddyking/ladybug/result"
 )
 
 var _ = Describe("PrintInfo", func() {
@@ -25,10 +26,10 @@ var _ = Describe("PrintInfo", func() {
 	})
 
 	It("prints the number of running containers to stdout", func() {
-		result := InfoResult{
+		infoResult := result.InfoResult{
 			ContainersCount: 3,
 		}
-		resultPrinter.PrintInfo(result)
+		resultPrinter.PrintInfo(infoResult)
 
 		Eventually(stdout).Should(gbytes.Say("Running containers: 3"))
 	})
@@ -39,8 +40,8 @@ var _ = Describe("PrintInfo", func() {
 		})
 
 		It("returns the error", func() {
-			result := InfoResult{}
-			err := resultPrinter.PrintInfo(result)
+			infoResult := result.InfoResult{}
+			err := resultPrinter.PrintInfo(infoResult)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-writing-to-writer"))

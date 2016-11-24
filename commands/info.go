@@ -3,6 +3,7 @@ package commands
 import (
 	"code.cloudfoundry.org/garden"
 	"github.com/teddyking/ladybug/print"
+	"github.com/teddyking/ladybug/result"
 )
 
 type Info struct {
@@ -11,14 +12,14 @@ type Info struct {
 }
 
 func (command *Info) Execute(args []string) error {
-	var result print.InfoResult
+	var infoResult result.InfoResult
 
 	containers, err := command.Client.Containers(garden.Properties{})
 	if err != nil {
 		return err
 	}
 
-	result.ContainersCount = len(containers)
+	infoResult.Generate(containers)
 
-	return command.Printer.PrintInfo(result)
+	return command.Printer.PrintInfo(infoResult)
 }
