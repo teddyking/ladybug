@@ -26,7 +26,7 @@ var _ = Describe("PrintInfo", func() {
 	})
 
 	It("prints the number of running containers to stdout", func() {
-		infoResult := result.InfoResult{
+		infoResult := result.Info{
 			ContainersCount: 3,
 		}
 		resultPrinter.PrintInfo(infoResult)
@@ -40,7 +40,7 @@ var _ = Describe("PrintInfo", func() {
 		})
 
 		It("returns the error", func() {
-			infoResult := result.InfoResult{}
+			infoResult := result.Info{}
 			err := resultPrinter.PrintInfo(infoResult)
 
 			Expect(err).To(HaveOccurred())

@@ -12,7 +12,7 @@ type Info struct {
 }
 
 func (command *Info) Execute(args []string) error {
-	var infoResult result.InfoResult
+	var infoResult result.Info
 
 	containers, err := command.Client.Containers(garden.Properties{})
 	if err != nil {

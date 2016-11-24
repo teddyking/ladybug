@@ -9,10 +9,10 @@ import (
 	"code.cloudfoundry.org/garden/gardenfakes"
 )
 
-var _ = Describe("InfoResult", func() {
+var _ = Describe("Info", func() {
 	Describe("Generate", func() {
 		var (
-			infoResult    InfoResult
+			infoResult    Info
 			containers    []garden.Container
 			fakeContainer *gardenfakes.FakeContainer
 		)
@@ -22,7 +22,7 @@ var _ = Describe("InfoResult", func() {
 			containers = []garden.Container{fakeContainer}
 		})
 
-		It("generates an InfoResult", func() {
+		It("generates an Info", func() {
 			infoResult.Generate(containers)
 
 			Expect(infoResult.ContainersCount).To(Equal(1))

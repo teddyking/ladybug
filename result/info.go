@@ -2,10 +2,10 @@ package result
 
 import "code.cloudfoundry.org/garden"
 
-type InfoResult struct {
+type Info struct {
 	ContainersCount int
 }
 
-func (r *InfoResult) Generate(containers []garden.Container) {
-	r.ContainersCount = len(containers)
+func (i *Info) Generate(containers []garden.Container) {
+	i.ContainersCount = len(containers)
 }

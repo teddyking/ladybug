@@ -30,11 +30,11 @@ var _ = Describe("Info", func() {
 	})
 
 	Describe("Execute", func() {
-		It("generates an InfoResult and sends it to be printed", func() {
+		It("generates a result.Info and sends it to be printed", func() {
 			Expect(infoCommand.Execute(nil)).To(Succeed())
 
 			Expect(fakePrinter.PrintInfoCallCount()).To(Equal(1))
-			Expect(fakePrinter.PrintInfoArgsForCall(0)).To(Equal(result.InfoResult{}))
+			Expect(fakePrinter.PrintInfoArgsForCall(0)).To(Equal(result.Info{}))
 		})
 
 		Context("there is an error retrieving containers", func() {

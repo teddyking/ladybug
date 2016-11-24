@@ -9,7 +9,7 @@ import (
 // go:generate counterfeiter . Printer
 type Printer interface {
 	PrintContainers(containersResult result.ContainersResult) error
-	PrintInfo(infoResult result.InfoResult) error
+	PrintInfo(infoResult result.Info) error
 }
 
 type ResultPrinter struct {
