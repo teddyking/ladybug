@@ -4,23 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"code.cloudfoundry.org/garden"
 	"github.com/concourse/fly/ui"
+	"github.com/teddyking/ladybug/result"
 )
 
-type ContainersResult struct {
-	ContainerInfos []ContainerInfo
-}
-
-type ContainerInfo struct {
-	Handle       string
-	Ip           string
-	ProcessName  string
-	CreatedAt    string
-	PortMappings []garden.PortMapping
-}
-
-func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
+func (r *ResultPrinter) PrintContainers(containersResult result.ContainersResult) error {
 	table := ui.Table{
 		Headers: ui.TableRow{
 			{Contents: "Handle"},
@@ -31,9 +19,9 @@ func (r *ResultPrinter) PrintContainers(result ContainersResult) error {
 		},
 	}
 
-	for _, containerInfo := range result.ContainerInfos {
+	for handle, containerInfo := range containersResult {
 		row := ui.TableRow{
-			{Contents: containerInfo.Handle},
+			{Contents: handle},
 			{Contents: containerInfo.Ip},
 			{Contents: containerInfo.ProcessName},
 			{Contents: trimTime(containerInfo.CreatedAt)},

@@ -5,13 +5,14 @@ import (
 	"sync"
 
 	"github.com/teddyking/ladybug/print"
+	"github.com/teddyking/ladybug/result"
 )
 
 type FakePrinter struct {
-	PrintContainersStub        func(result print.ContainersResult) error
+	PrintContainersStub        func(containersResult result.ContainersResult) error
 	printContainersMutex       sync.RWMutex
 	printContainersArgsForCall []struct {
-		result print.ContainersResult
+		containersResult result.ContainersResult
 	}
 	printContainersReturns struct {
 		result1 error
@@ -28,15 +29,15 @@ type FakePrinter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePrinter) PrintContainers(result print.ContainersResult) error {
+func (fake *FakePrinter) PrintContainers(containersResult result.ContainersResult) error {
 	fake.printContainersMutex.Lock()
 	fake.printContainersArgsForCall = append(fake.printContainersArgsForCall, struct {
-		result print.ContainersResult
-	}{result})
-	fake.recordInvocation("PrintContainers", []interface{}{result})
+		containersResult result.ContainersResult
+	}{containersResult})
+	fake.recordInvocation("PrintContainers", []interface{}{containersResult})
 	fake.printContainersMutex.Unlock()
 	if fake.PrintContainersStub != nil {
-		return fake.PrintContainersStub(result)
+		return fake.PrintContainersStub(containersResult)
 	} else {
 		return fake.printContainersReturns.result1
 	}
@@ -48,10 +49,10 @@ func (fake *FakePrinter) PrintContainersCallCount() int {
 	return len(fake.printContainersArgsForCall)
 }
 
-func (fake *FakePrinter) PrintContainersArgsForCall(i int) print.ContainersResult {
+func (fake *FakePrinter) PrintContainersArgsForCall(i int) result.ContainersResult {
 	fake.printContainersMutex.RLock()
 	defer fake.printContainersMutex.RUnlock()
-	return fake.printContainersArgsForCall[i].result
+	return fake.printContainersArgsForCall[i].containersResult
 }
 
 func (fake *FakePrinter) PrintContainersReturns(result1 error) {

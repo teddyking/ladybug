@@ -1,10 +1,14 @@
 package print
 
-import "io"
+import (
+	"io"
+
+	"github.com/teddyking/ladybug/result"
+)
 
 // go:generate counterfeiter . Printer
 type Printer interface {
-	PrintContainers(result ContainersResult) error
+	PrintContainers(containersResult result.ContainersResult) error
 	PrintInfo(result InfoResult) error
 }
 
