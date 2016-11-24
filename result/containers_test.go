@@ -9,7 +9,7 @@ import (
 
 	"code.cloudfoundry.org/garden"
 	"code.cloudfoundry.org/garden/gardenfakes"
-	"github.com/teddyking/ladybug/system/systemfakes"
+	"github.com/teddyking/ladybug/sys/sysfakes"
 )
 
 var _ = Describe("Containers", func() {
@@ -88,10 +88,10 @@ var _ = Describe("Containers", func() {
 	})
 
 	Describe("WithProcessNames", func() {
-		var fakeHost *systemfakes.FakeHost
+		var fakeHost *sysfakes.FakeHost
 
 		BeforeEach(func() {
-			fakeHost = &systemfakes.FakeHost{}
+			fakeHost = &sysfakes.FakeHost{}
 
 			fakeHost.ContainerPidsReturns([]string{"container-pid"}, nil)
 			fakeHost.ContainerProcessNameReturns("ruby", nil)
@@ -137,10 +137,10 @@ var _ = Describe("Containers", func() {
 	})
 
 	Describe("WithCreatedAtTimes", func() {
-		var fakeHost *systemfakes.FakeHost
+		var fakeHost *sysfakes.FakeHost
 
 		BeforeEach(func() {
-			fakeHost = &systemfakes.FakeHost{}
+			fakeHost = &sysfakes.FakeHost{}
 
 			fakeHost.ContainerCreationTimeReturns("27-07-1989", nil)
 		})

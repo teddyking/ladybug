@@ -4,12 +4,12 @@ import (
 	"code.cloudfoundry.org/garden"
 	"github.com/teddyking/ladybug/output"
 	"github.com/teddyking/ladybug/result"
-	"github.com/teddyking/ladybug/system"
+	"github.com/teddyking/ladybug/sys"
 )
 
 type Containers struct {
 	Client  garden.Client
-	Host    system.Host
+	Host    sys.Host
 	Printer output.Printer
 }
 

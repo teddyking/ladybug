@@ -1,4 +1,4 @@
-package system
+package sys
 
 // go:generate counterfeiter . Host
 type Host interface {

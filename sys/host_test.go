@@ -1,9 +1,9 @@
-package system_test
+package sys_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/teddyking/ladybug/system"
+	. "github.com/teddyking/ladybug/sys"
 
 	"fmt"
 	"io/ioutil"

@@ -2,7 +2,7 @@ package result
 
 import (
 	"code.cloudfoundry.org/garden"
-	"github.com/teddyking/ladybug/system"
+	"github.com/teddyking/ladybug/sys"
 )
 
 type Containers map[string]CInfo
@@ -44,7 +44,7 @@ func WithIPs(gdnContainers []garden.Container) resultModifier {
 	}
 }
 
-func WithProcessNames(gdnContainers []garden.Container, host system.Host) resultModifier {
+func WithProcessNames(gdnContainers []garden.Container, host sys.Host) resultModifier {
 	return func(c Containers) (Containers, error) {
 		for _, gdnContainer := range gdnContainers {
 			handle := gdnContainer.Handle()
@@ -72,7 +72,7 @@ func WithProcessNames(gdnContainers []garden.Container, host system.Host) result
 	}
 }
 
-func WithCreatedAtTimes(gdnContainers []garden.Container, host system.Host) resultModifier {
+func WithCreatedAtTimes(gdnContainers []garden.Container, host sys.Host) resultModifier {
 	return func(c Containers) (Containers, error) {
 		for _, gdnContainer := range gdnContainers {
 			handle := gdnContainer.Handle()

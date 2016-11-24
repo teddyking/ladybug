@@ -1,4 +1,4 @@
-package system_test
+package sys_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestSystem(t *testing.T) {
+func TestSys(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "System Suite")
+	RunSpecs(t, "Sys Suite")
 }

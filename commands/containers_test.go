@@ -11,20 +11,20 @@ import (
 	"code.cloudfoundry.org/garden/gardenfakes"
 	"github.com/teddyking/ladybug/output/outputfakes"
 	"github.com/teddyking/ladybug/result"
-	"github.com/teddyking/ladybug/system/systemfakes"
+	"github.com/teddyking/ladybug/sys/sysfakes"
 )
 
 var _ = Describe("Containers", func() {
 	var (
 		fakeGardenClient  gardenfakes.FakeClient
-		fakeHost          systemfakes.FakeHost
+		fakeHost          sysfakes.FakeHost
 		fakePrinter       outputfakes.FakePrinter
 		containersCommand *Containers
 	)
 
 	BeforeEach(func() {
 		fakeGardenClient = gardenfakes.FakeClient{}
-		fakeHost = systemfakes.FakeHost{}
+		fakeHost = sysfakes.FakeHost{}
 		fakePrinter = outputfakes.FakePrinter{}
 	})
 

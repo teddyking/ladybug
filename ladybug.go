@@ -10,7 +10,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/teddyking/ladybug/commands"
 	"github.com/teddyking/ladybug/output"
-	sys "github.com/teddyking/ladybug/system"
+	"github.com/teddyking/ladybug/sys"
 )
 
 type command struct {
