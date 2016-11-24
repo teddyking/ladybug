@@ -14,7 +14,7 @@ func (e ErroringWriter) Write(p []byte) (int, error) {
 	return 0, errors.New("error-writing-to-writer")
 }
 
-func TestPrint(t *testing.T) {
+func TestOutput(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Print Suite")
+	RunSpecs(t, "Output Suite")
 }
