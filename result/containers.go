@@ -5,7 +5,7 @@ import (
 	"github.com/teddyking/ladybug/system"
 )
 
-type ContainersResult map[string]CInfo
+type Containers map[string]CInfo
 
 type CInfo struct {
 	Ip           string
@@ -14,40 +14,40 @@ type CInfo struct {
 	PortMappings []garden.PortMapping
 }
 
-type resultModifier func(r ContainersResult) (ContainersResult, error)
+type resultModifier func(c Containers) (Containers, error)
 
-func WithHandles(containers []garden.Container) resultModifier {
-	return func(r ContainersResult) (ContainersResult, error) {
-		for _, container := range containers {
-			r[container.Handle()] = CInfo{}
+func WithHandles(gdnContainers []garden.Container) resultModifier {
+	return func(c Containers) (Containers, error) {
+		for _, gdnContainer := range gdnContainers {
+			c[gdnContainer.Handle()] = CInfo{}
 		}
 
-		return r, nil
+		return c, nil
 	}
 }
 
-func WithIPs(containers []garden.Container) resultModifier {
-	return func(r ContainersResult) (ContainersResult, error) {
-		for _, container := range containers {
-			handle := container.Handle()
-			containerInfo, err := container.Info()
+func WithIPs(gdnContainers []garden.Container) resultModifier {
+	return func(c Containers) (Containers, error) {
+		for _, gdnContainer := range gdnContainers {
+			handle := gdnContainer.Handle()
+			containerInfo, err := gdnContainer.Info()
 			if err != nil {
 				return nil, err
 			}
 
-			currentCInfo := r[handle]
+			currentCInfo := c[handle]
 			currentCInfo.Ip = containerInfo.ContainerIP
-			r[handle] = currentCInfo
+			c[handle] = currentCInfo
 		}
 
-		return r, nil
+		return c, nil
 	}
 }
 
-func WithProcessNames(containers []garden.Container, host system.Host) resultModifier {
-	return func(r ContainersResult) (ContainersResult, error) {
-		for _, container := range containers {
-			handle := container.Handle()
+func WithProcessNames(gdnContainers []garden.Container, host system.Host) resultModifier {
+	return func(c Containers) (Containers, error) {
+		for _, gdnContainer := range gdnContainers {
+			handle := gdnContainer.Handle()
 
 			containerPids, err := host.ContainerPids(handle)
 			if err != nil {
@@ -63,59 +63,59 @@ func WithProcessNames(containers []garden.Container, host system.Host) resultMod
 				}
 			}
 
-			currentCInfo := r[handle]
+			currentCInfo := c[handle]
 			currentCInfo.ProcessName = containerProcessName
-			r[handle] = currentCInfo
+			c[handle] = currentCInfo
 		}
 
-		return r, nil
+		return c, nil
 	}
 }
 
-func WithCreatedAtTimes(containers []garden.Container, host system.Host) resultModifier {
-	return func(r ContainersResult) (ContainersResult, error) {
-		for _, container := range containers {
-			handle := container.Handle()
+func WithCreatedAtTimes(gdnContainers []garden.Container, host system.Host) resultModifier {
+	return func(c Containers) (Containers, error) {
+		for _, gdnContainer := range gdnContainers {
+			handle := gdnContainer.Handle()
 
 			containerCreationTime, err := host.ContainerCreationTime(handle)
 			if err != nil {
 				return nil, err
 			}
 
-			currentCInfo := r[handle]
+			currentCInfo := c[handle]
 			currentCInfo.CreatedAt = containerCreationTime
-			r[handle] = currentCInfo
+			c[handle] = currentCInfo
 		}
 
-		return r, nil
+		return c, nil
 	}
 }
 
-func WithPortMappings(containers []garden.Container) resultModifier {
-	return func(r ContainersResult) (ContainersResult, error) {
-		for _, container := range containers {
-			handle := container.Handle()
-			containerInfo, err := container.Info()
+func WithPortMappings(gdnContainers []garden.Container) resultModifier {
+	return func(c Containers) (Containers, error) {
+		for _, gdnContainer := range gdnContainers {
+			handle := gdnContainer.Handle()
+			containerInfo, err := gdnContainer.Info()
 			if err != nil {
 				return nil, err
 			}
 
-			currentCInfo := r[handle]
+			currentCInfo := c[handle]
 			currentCInfo.PortMappings = containerInfo.MappedPorts
-			r[handle] = currentCInfo
+			c[handle] = currentCInfo
 		}
 
-		return r, nil
+		return c, nil
 	}
 }
 
-func (r ContainersResult) Generate(modifiers ...resultModifier) error {
+func (c Containers) Generate(modifiers ...resultModifier) error {
 	for _, mod := range modifiers {
-		result, err := mod(r)
+		result, err := mod(c)
 		if err != nil {
 			return err
 		}
-		r = result
+		c = result
 	}
 
 	return nil

@@ -12,14 +12,14 @@ import (
 	"github.com/teddyking/ladybug/system/systemfakes"
 )
 
-var _ = Describe("ContainersResult", func() {
+var _ = Describe("Containers", func() {
 	var (
 		fakeContainer    *gardenfakes.FakeContainer
 		fakeContainer2   *gardenfakes.FakeContainer
 		fakeInfo         garden.ContainerInfo
 		fakeInfo2        garden.ContainerInfo
 		containers       []garden.Container
-		containersResult ContainersResult
+		containersResult Containers
 	)
 
 	BeforeEach(func() {
@@ -44,11 +44,11 @@ var _ = Describe("ContainersResult", func() {
 			fakeContainer,
 			fakeContainer2,
 		}
-		containersResult = make(ContainersResult, len(containers))
+		containersResult = make(Containers, len(containers))
 	})
 
 	Describe("WithHandles", func() {
-		It("returns a func that adds handles to the ContainersResult", func() {
+		It("returns a func that adds handles to the Containers", func() {
 			withHandlesFunc := WithHandles(containers)
 
 			updatedResult, err := withHandlesFunc(containersResult)
@@ -62,7 +62,7 @@ var _ = Describe("ContainersResult", func() {
 	})
 
 	Describe("WithIPs", func() {
-		It("returns a func that adds IPs to the ContainersResult", func() {
+		It("returns a func that adds IPs to the Containers", func() {
 			withIPsFunc := WithIPs(containers)
 
 			updatedResult, err := withIPsFunc(containersResult)
@@ -97,7 +97,7 @@ var _ = Describe("ContainersResult", func() {
 			fakeHost.ContainerProcessNameReturns("ruby", nil)
 		})
 
-		It("returns a func that adds process names to the ContainersResult", func() {
+		It("returns a func that adds process names to the Containers", func() {
 			withProcessNamesFunc := WithProcessNames(containers, fakeHost)
 
 			updatedResult, err := withProcessNamesFunc(containersResult)
@@ -145,7 +145,7 @@ var _ = Describe("ContainersResult", func() {
 			fakeHost.ContainerCreationTimeReturns("27-07-1989", nil)
 		})
 
-		It("returns a func that adds created at times to the ContainersResult", func() {
+		It("returns a func that adds created at times to the Containers", func() {
 			withCreatedAtTimesFunc := WithCreatedAtTimes(containers, fakeHost)
 
 			updatedResult, err := withCreatedAtTimesFunc(containersResult)
@@ -171,7 +171,7 @@ var _ = Describe("ContainersResult", func() {
 	})
 
 	Describe("WithPortMappings", func() {
-		It("returns a func that adds port mappings to the ContainersResult", func() {
+		It("returns a func that adds port mappings to the Containers", func() {
 			withPortMappingsFunc := WithPortMappings(containers)
 
 			updatedResult, err := withPortMappingsFunc(containersResult)
@@ -197,7 +197,7 @@ var _ = Describe("ContainersResult", func() {
 	})
 
 	Describe("Generate", func() {
-		It("loops over the provided resultModifier funcs, updating the ContainersResult for each", func() {
+		It("loops over the provided resultModifier funcs, updating the Containers for each", func() {
 			containersResult.Generate(
 				WithHandles(containers),
 				WithIPs(containers),
@@ -210,7 +210,7 @@ var _ = Describe("ContainersResult", func() {
 
 		Context("when one of the resultModifier funcs returns an error", func() {
 			It("returns the error", func() {
-				erroringResultModifierFunc := func(ContainersResult) (ContainersResult, error) {
+				erroringResultModifierFunc := func(Containers) (Containers, error) {
 					return nil, errors.New("resultModifiers-func-error")
 				}
 

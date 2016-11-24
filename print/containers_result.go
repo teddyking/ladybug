@@ -8,7 +8,7 @@ import (
 	"github.com/teddyking/ladybug/result"
 )
 
-func (r *ResultPrinter) PrintContainers(containersResult result.ContainersResult) error {
+func (r *ResultPrinter) PrintContainers(containersResult result.Containers) error {
 	table := ui.Table{
 		Headers: ui.TableRow{
 			{Contents: "Handle"},

@@ -8,7 +8,7 @@ import (
 
 // go:generate counterfeiter . Printer
 type Printer interface {
-	PrintContainers(containersResult result.ContainersResult) error
+	PrintContainers(containersResult result.Containers) error
 	PrintInfo(infoResult result.Info) error
 }
 

@@ -9,10 +9,10 @@ import (
 )
 
 type FakePrinter struct {
-	PrintContainersStub        func(containersResult result.ContainersResult) error
+	PrintContainersStub        func(containersResult result.Containers) error
 	printContainersMutex       sync.RWMutex
 	printContainersArgsForCall []struct {
-		containersResult result.ContainersResult
+		containersResult result.Containers
 	}
 	printContainersReturns struct {
 		result1 error
@@ -29,10 +29,10 @@ type FakePrinter struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakePrinter) PrintContainers(containersResult result.ContainersResult) error {
+func (fake *FakePrinter) PrintContainers(containersResult result.Containers) error {
 	fake.printContainersMutex.Lock()
 	fake.printContainersArgsForCall = append(fake.printContainersArgsForCall, struct {
-		containersResult result.ContainersResult
+		containersResult result.Containers
 	}{containersResult})
 	fake.recordInvocation("PrintContainers", []interface{}{containersResult})
 	fake.printContainersMutex.Unlock()
@@ -49,7 +49,7 @@ func (fake *FakePrinter) PrintContainersCallCount() int {
 	return len(fake.printContainersArgsForCall)
 }
 
-func (fake *FakePrinter) PrintContainersArgsForCall(i int) result.ContainersResult {
+func (fake *FakePrinter) PrintContainersArgsForCall(i int) result.Containers {
 	fake.printContainersMutex.RLock()
 	defer fake.printContainersMutex.RUnlock()
 	return fake.printContainersArgsForCall[i].containersResult

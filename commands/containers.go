@@ -19,7 +19,7 @@ func (command *Containers) Execute(args []string) error {
 		return err
 	}
 
-	containersResult := make(result.ContainersResult, len(containers))
+	containersResult := make(result.Containers, len(containers))
 
 	err = containersResult.Generate(
 		result.WithHandles(containers),

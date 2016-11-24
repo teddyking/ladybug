@@ -37,11 +37,11 @@ var _ = Describe("Containers", func() {
 	})
 
 	Describe("Execute", func() {
-		It("generates a ContainersResult and sends it to be printed", func() {
+		It("generates a result.Containers and sends it to be printed", func() {
 			Expect(containersCommand.Execute(nil)).To(Succeed())
 
 			Expect(fakePrinter.PrintContainersCallCount()).To(Equal(1))
-			Expect(fakePrinter.PrintContainersArgsForCall(0)).To(Equal(result.ContainersResult{}))
+			Expect(fakePrinter.PrintContainersArgsForCall(0)).To(Equal(result.Containers{}))
 		})
 
 		Context("when the garden Client returns an error", func() {

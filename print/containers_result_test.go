@@ -28,7 +28,7 @@ var _ = Describe("PrintContainers", func() {
 	})
 
 	DescribeTable("formatted output",
-		func(containersResult result.ContainersResult, expectedOutput string) {
+		func(containersResult result.Containers, expectedOutput string) {
 			Expect(resultPrinter.PrintContainers(containersResult)).To(Succeed())
 
 			Eventually(stdout).Should(gbytes.Say(expectedOutput))
@@ -36,7 +36,7 @@ var _ = Describe("PrintContainers", func() {
 
 		Entry(
 			"with 1 container",
-			result.ContainersResult{
+			result.Containers{
 				"test-handle": result.CInfo{
 					Ip:           "192.0.2.10",
 					ProcessName:  "ruby",
@@ -49,7 +49,7 @@ var _ = Describe("PrintContainers", func() {
 
 		Entry(
 			"with 1 container with 1 PortMapping",
-			result.ContainersResult{
+			result.Containers{
 				"test-handle": result.CInfo{
 					Ip:           "192.0.2.10",
 					ProcessName:  "ruby",
@@ -62,7 +62,7 @@ var _ = Describe("PrintContainers", func() {
 
 		Entry(
 			"with 1 container with 2 PortMappings",
-			result.ContainersResult{
+			result.Containers{
 				"test-handle": result.CInfo{
 					Ip:           "192.0.2.10",
 					ProcessName:  "ruby",
@@ -75,7 +75,7 @@ var _ = Describe("PrintContainers", func() {
 
 		Entry(
 			"with 2 containers",
-			result.ContainersResult{
+			result.Containers{
 				"test-handle": result.CInfo{
 					Ip:           "192.0.2.10",
 					ProcessName:  "ruby",
@@ -99,7 +99,7 @@ var _ = Describe("PrintContainers", func() {
 		})
 
 		It("returns the error", func() {
-			containersResult := result.ContainersResult{
+			containersResult := result.Containers{
 				"test-handle": result.CInfo{},
 			}
 
