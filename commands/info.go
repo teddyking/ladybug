@@ -2,13 +2,13 @@ package commands
 
 import (
 	"code.cloudfoundry.org/garden"
-	"github.com/teddyking/ladybug/print"
+	"github.com/teddyking/ladybug/output"
 	"github.com/teddyking/ladybug/result"
 )
 
 type Info struct {
 	Client  garden.Client
-	Printer print.Printer
+	Printer output.Printer
 }
 
 func (command *Info) Execute(args []string) error {

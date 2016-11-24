@@ -8,7 +8,7 @@ import (
 	"errors"
 
 	"code.cloudfoundry.org/garden/gardenfakes"
-	"github.com/teddyking/ladybug/print/printfakes"
+	"github.com/teddyking/ladybug/output/outputfakes"
 	"github.com/teddyking/ladybug/result"
 )
 
@@ -16,12 +16,12 @@ var _ = Describe("Info", func() {
 	var (
 		fakeGardenClient gardenfakes.FakeClient
 		infoCommand      *Info
-		fakePrinter      printfakes.FakePrinter
+		fakePrinter      outputfakes.FakePrinter
 	)
 
 	BeforeEach(func() {
 		fakeGardenClient = gardenfakes.FakeClient{}
-		fakePrinter = printfakes.FakePrinter{}
+		fakePrinter = outputfakes.FakePrinter{}
 
 		infoCommand = &Info{
 			Client:  &fakeGardenClient,

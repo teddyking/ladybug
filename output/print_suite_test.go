@@ -1,4 +1,4 @@
-package print_test
+package output_test
 
 import (
 	. "github.com/onsi/ginkgo"

@@ -2,7 +2,7 @@ package commands
 
 import (
 	"code.cloudfoundry.org/garden"
-	"github.com/teddyking/ladybug/print"
+	"github.com/teddyking/ladybug/output"
 	"github.com/teddyking/ladybug/result"
 	"github.com/teddyking/ladybug/system"
 )
@@ -10,7 +10,7 @@ import (
 type Containers struct {
 	Client  garden.Client
 	Host    system.Host
-	Printer print.Printer
+	Printer output.Printer
 }
 
 func (command *Containers) Execute(args []string) error {
