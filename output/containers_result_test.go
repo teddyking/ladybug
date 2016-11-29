@@ -79,7 +79,7 @@ var _ = Describe("PrintContainers", func() {
 				"test-handle": result.CInfo{
 					Ip:           "192.0.2.10",
 					ProcessName:  "ruby",
-					CreatedAt:    "2016-11-15T06:48:15.137799416Z",
+					CreatedAt:    "2015-11-15T06:48:15.137799416Z",
 					PortMappings: []garden.PortMapping{},
 				},
 				"test-handle-2": result.CInfo{
@@ -89,7 +89,7 @@ var _ = Describe("PrintContainers", func() {
 					PortMappings: []garden.PortMapping{},
 				},
 			},
-			"test-handle    192.0.2.10  ruby  2016-11-15 06:48:15  N/A\ntest-handle-2  192.0.2.11  tree  2016-11-15 06:48:15  N/A\n",
+			"test-handle-2  192.0.2.11  tree  2016-11-15 06:48:15  N/A\ntest-handle    192.0.2.10  ruby  2015-11-15 06:48:15  N/A\n",
 		),
 	)
 
