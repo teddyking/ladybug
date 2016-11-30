@@ -69,7 +69,7 @@ func (c containersByCreatedAt) Swap(i, j int) {
 }
 
 func (c containersByCreatedAt) Less(i, j int) bool {
-	layout := "2006-01-02T15:04:05.000000000Z"
+	layout := "2006-01-02 15:04:05"
 
 	t1, err := time.Parse(layout, c[i].CreatedAt)
 	if err != nil {
@@ -97,7 +97,7 @@ func mapToSlice(containersResult result.Containers) []containerInfo {
 			Handle:       handle,
 			Ip:           info.Ip,
 			ProcessName:  info.ProcessName,
-			CreatedAt:    info.CreatedAt,
+			CreatedAt:    trimTime(info.CreatedAt),
 			PortMappings: info.PortMappings,
 		}
 
